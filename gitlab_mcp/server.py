@@ -1,18 +1,19 @@
 from fastmcp import FastMCP
 
+from gitlab_mcp.auth import create_oauth_proxy
 from gitlab_mcp.config import Config
 from gitlab_mcp.client import GitLabClient
 
-mcp = FastMCP('GitLab MCP')
+config = Config.from_env()
+auth = create_oauth_proxy(config)
+mcp = FastMCP('GitLab MCP', auth=auth)
 
-config: Config | None = None
 service_client: GitLabClient | None = None
 
 
 def get_service_client() -> GitLabClient:
-    global service_client, config
+    global service_client
     if service_client is None:
-        config = Config.from_env()
         service_client = GitLabClient(
             url=config.url,
             token=config.secrets.service_token,
@@ -20,6 +21,10 @@ def get_service_client() -> GitLabClient:
         )
 
     return service_client
+
+
+def get_config() -> Config:
+    return config
 
 
 def main():
