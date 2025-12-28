@@ -10,12 +10,12 @@ class Secrets:
     oauth_client_secret: str
     service_token: str
 
-    @classmethod
-    def from_file(cls, path: Path) -> 'Secrets':
+    @staticmethod
+    def from_file(path: Path) -> 'Secrets':
         with open(path) as f:
             data = json.load(f)
 
-        return cls(
+        return Secrets(
             oauth_client_id=data['oauth_client_id'],
             oauth_client_secret=data['oauth_client_secret'],
             service_token=data['service_token'],
@@ -28,8 +28,8 @@ class Config:
     secrets: Secrets
     ca_cert_path: Path | None = None
 
-    @classmethod
-    def from_env(cls) -> 'Config':
+    @staticmethod
+    def from_env() -> 'Config':
         url = os.environ.get('GITLAB_URL')
         if not url:
             raise ValueError('GITLAB_URL environment variable is required')
@@ -47,4 +47,4 @@ class Config:
             if not ca_cert_path.exists():
                 raise ValueError(f'CA certificate file not found: {ca_cert_path}')
 
-        return cls(url=url, secrets=secrets, ca_cert_path=ca_cert_path)
+        return Config(url=url, secrets=secrets, ca_cert_path=ca_cert_path)
