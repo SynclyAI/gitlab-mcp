@@ -1,11 +1,9 @@
-from typing import Callable
-
 from fastmcp import FastMCP
 
 from gitlab_mcp.client import GitLabClient
 
 
-def register_tools(mcp: FastMCP, get_client: Callable[[], GitLabClient]):
+def register_tools(mcp: FastMCP, client: GitLabClient):
 
     @mcp.tool
     def list_projects(
@@ -13,7 +11,6 @@ def register_tools(mcp: FastMCP, get_client: Callable[[], GitLabClient]):
         owned: bool | None = None,
         membership: bool | None = None,
     ) -> list[dict]:
-        client = get_client()
         params = {'iterator': True}
         if search:
             params['search'] = search
@@ -42,7 +39,6 @@ def register_tools(mcp: FastMCP, get_client: Callable[[], GitLabClient]):
         ref: str | None = None,
         recursive: bool = False,
     ) -> list[dict]:
-        client = get_client()
         project = client.get_project(project_id)
         params = {'iterator': True, 'recursive': recursive}
         if path:
@@ -69,7 +65,6 @@ def register_tools(mcp: FastMCP, get_client: Callable[[], GitLabClient]):
         file_path: str,
         ref: str | None = None,
     ) -> dict:
-        client = get_client()
         project = client.get_project(project_id)
         params = {'file_path': file_path}
         if ref:
@@ -93,7 +88,6 @@ def register_tools(mcp: FastMCP, get_client: Callable[[], GitLabClient]):
         file_path: str,
         ref: str | None = None,
     ) -> list[dict]:
-        client = get_client()
         project = client.get_project(project_id)
         params = {}
         if ref:
@@ -121,7 +115,6 @@ def register_tools(mcp: FastMCP, get_client: Callable[[], GitLabClient]):
         query: str,
         ref: str | None = None,
     ) -> list[dict]:
-        client = get_client()
         project = client.get_project(project_id)
         params = {'scope': 'blobs', 'search': query}
         if ref:
@@ -147,7 +140,6 @@ def register_tools(mcp: FastMCP, get_client: Callable[[], GitLabClient]):
         project_id: str,
         search: str | None = None,
     ) -> list[dict]:
-        client = get_client()
         project = client.get_project(project_id)
         params = {'iterator': True}
         if search:
@@ -180,7 +172,6 @@ def register_tools(mcp: FastMCP, get_client: Callable[[], GitLabClient]):
         since: str | None = None,
         until: str | None = None,
     ) -> list[dict]:
-        client = get_client()
         project = client.get_project(project_id)
         params = {'iterator': True}
         if ref_name:
@@ -213,7 +204,6 @@ def register_tools(mcp: FastMCP, get_client: Callable[[], GitLabClient]):
         project_id: str,
         sha: str,
     ) -> dict:
-        client = get_client()
         project = client.get_project(project_id)
         commit = project.commits.get(sha)
 

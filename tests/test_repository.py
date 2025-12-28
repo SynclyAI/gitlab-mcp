@@ -9,7 +9,7 @@ def test_list_projects(mock_client, mock_project):
     mcp = FastMCP('test')
     mock_client.list_projects.return_value = [mock_project]
 
-    repository.register_tools(mcp, lambda: mock_client)
+    repository.register_tools(mcp, mock_client)
 
     tool = next(t for t in mcp._tool_manager._tools.values() if t.name == 'list_projects')
     result = tool.fn()
@@ -27,7 +27,7 @@ def test_get_repository_tree(mock_client):
     ]
     mock_client.get_project.return_value = mock_project
 
-    repository.register_tools(mcp, lambda: mock_client)
+    repository.register_tools(mcp, mock_client)
 
     tool = next(t for t in mcp._tool_manager._tools.values() if t.name == 'get_repository_tree')
     result = tool.fn(project_id='1')
@@ -51,7 +51,7 @@ def test_get_file_content(mock_client):
     mock_project.files.get.return_value = mock_file
     mock_client.get_project.return_value = mock_project
 
-    repository.register_tools(mcp, lambda: mock_client)
+    repository.register_tools(mcp, mock_client)
 
     tool = next(t for t in mcp._tool_manager._tools.values() if t.name == 'get_file_content')
     result = tool.fn(project_id='1', file_path='README.md')
@@ -79,7 +79,7 @@ def test_list_branches(mock_client):
     mock_project.branches.list.return_value = [mock_branch]
     mock_client.get_project.return_value = mock_project
 
-    repository.register_tools(mcp, lambda: mock_client)
+    repository.register_tools(mcp, mock_client)
 
     tool = next(t for t in mcp._tool_manager._tools.values() if t.name == 'list_branches')
     result = tool.fn(project_id='1')

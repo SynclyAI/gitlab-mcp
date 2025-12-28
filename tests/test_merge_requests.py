@@ -11,7 +11,7 @@ def test_list_merge_requests(mock_client, mock_merge_request):
     mock_project.mergerequests.list.return_value = [mock_merge_request]
     mock_client.get_project.return_value = mock_project
 
-    merge_requests.register_tools(mcp, lambda: mock_client)
+    merge_requests.register_tools(mcp, mock_client)
 
     tool = next(t for t in mcp._tool_manager._tools.values() if t.name == 'list_merge_requests')
     result = tool.fn(project_id='1')
@@ -28,7 +28,7 @@ def test_get_merge_request(mock_client, mock_merge_request):
     mock_project.mergerequests.get.return_value = mock_merge_request
     mock_client.get_project.return_value = mock_project
 
-    merge_requests.register_tools(mcp, lambda: mock_client)
+    merge_requests.register_tools(mcp, mock_client)
 
     tool = next(t for t in mcp._tool_manager._tools.values() if t.name == 'get_merge_request')
     result = tool.fn(project_id='1', mr_iid=1)
@@ -58,7 +58,7 @@ def test_get_merge_request_changes(mock_client, mock_merge_request):
     mock_project.mergerequests.get.return_value = mock_merge_request
     mock_client.get_project.return_value = mock_project
 
-    merge_requests.register_tools(mcp, lambda: mock_client)
+    merge_requests.register_tools(mcp, mock_client)
 
     tool = next(t for t in mcp._tool_manager._tools.values() if t.name == 'get_merge_request_changes')
     result = tool.fn(project_id='1', mr_iid=1)
@@ -80,7 +80,7 @@ def test_add_merge_request_comment(mock_client, mock_merge_request):
     mock_project.mergerequests.get.return_value = mock_merge_request
     mock_client.get_project.return_value = mock_project
 
-    merge_requests.register_tools(mcp, lambda: mock_client)
+    merge_requests.register_tools(mcp, mock_client)
 
     tool = next(t for t in mcp._tool_manager._tools.values() if t.name == 'add_merge_request_comment')
     result = tool.fn(project_id='1', mr_iid=1, body='Test comment')
@@ -95,7 +95,7 @@ def test_approve_merge_request(mock_client, mock_merge_request):
     mock_project.mergerequests.get.return_value = mock_merge_request
     mock_client.get_project.return_value = mock_project
 
-    merge_requests.register_tools(mcp, lambda: mock_client)
+    merge_requests.register_tools(mcp, mock_client)
 
     tool = next(t for t in mcp._tool_manager._tools.values() if t.name == 'approve_merge_request')
     result = tool.fn(project_id='1', mr_iid=1)
