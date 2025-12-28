@@ -1,9 +1,9 @@
 from pathlib import Path
 
 from fastmcp import FastMCP
-from fastmcp.server.dependencies import get_access_token
 
-from gitlab_mcp.client import CompositeGitLabClient, TokenGitLabClient
+from gitlab_mcp.client import TokenGitLabClient
+from gitlab_mcp.tools.common import get_client
 
 
 def register_tools(
@@ -19,8 +19,7 @@ def register_tools(
         owned: bool | None = None,
         membership: bool | None = None,
     ) -> list[dict]:
-        token = get_access_token()
-        client = CompositeGitLabClient(token.token, service_client, url, ca_cert_path)
+        client = get_client(service_client, url, ca_cert_path)
         params = {'iterator': True}
         if search:
             params['search'] = search
@@ -49,8 +48,7 @@ def register_tools(
         ref: str | None = None,
         recursive: bool = False,
     ) -> list[dict]:
-        token = get_access_token()
-        client = CompositeGitLabClient(token.token, service_client, url, ca_cert_path)
+        client = get_client(service_client, url, ca_cert_path)
         project = client.get_project(project_id)
         params = {'iterator': True, 'recursive': recursive}
         if path:
@@ -77,8 +75,7 @@ def register_tools(
         file_path: str,
         ref: str | None = None,
     ) -> dict:
-        token = get_access_token()
-        client = CompositeGitLabClient(token.token, service_client, url, ca_cert_path)
+        client = get_client(service_client, url, ca_cert_path)
         project = client.get_project(project_id)
         params = {'file_path': file_path}
         if ref:
@@ -102,8 +99,7 @@ def register_tools(
         file_path: str,
         ref: str | None = None,
     ) -> list[dict]:
-        token = get_access_token()
-        client = CompositeGitLabClient(token.token, service_client, url, ca_cert_path)
+        client = get_client(service_client, url, ca_cert_path)
         project = client.get_project(project_id)
         params = {}
         if ref:
@@ -131,8 +127,7 @@ def register_tools(
         query: str,
         ref: str | None = None,
     ) -> list[dict]:
-        token = get_access_token()
-        client = CompositeGitLabClient(token.token, service_client, url, ca_cert_path)
+        client = get_client(service_client, url, ca_cert_path)
         project = client.get_project(project_id)
         params = {'scope': 'blobs', 'search': query}
         if ref:
@@ -158,8 +153,7 @@ def register_tools(
         project_id: str,
         search: str | None = None,
     ) -> list[dict]:
-        token = get_access_token()
-        client = CompositeGitLabClient(token.token, service_client, url, ca_cert_path)
+        client = get_client(service_client, url, ca_cert_path)
         project = client.get_project(project_id)
         params = {'iterator': True}
         if search:
@@ -192,8 +186,7 @@ def register_tools(
         since: str | None = None,
         until: str | None = None,
     ) -> list[dict]:
-        token = get_access_token()
-        client = CompositeGitLabClient(token.token, service_client, url, ca_cert_path)
+        client = get_client(service_client, url, ca_cert_path)
         project = client.get_project(project_id)
         params = {'iterator': True}
         if ref_name:
@@ -226,8 +219,7 @@ def register_tools(
         project_id: str,
         sha: str,
     ) -> dict:
-        token = get_access_token()
-        client = CompositeGitLabClient(token.token, service_client, url, ca_cert_path)
+        client = get_client(service_client, url, ca_cert_path)
         project = client.get_project(project_id)
         commit = project.commits.get(sha)
 

@@ -1,9 +1,9 @@
 from pathlib import Path
 
 from fastmcp import FastMCP
-from fastmcp.server.dependencies import get_access_token
 
-from gitlab_mcp.client import CompositeGitLabClient, TokenGitLabClient
+from gitlab_mcp.client import TokenGitLabClient
+from gitlab_mcp.tools.common import get_client
 
 
 def register_tools(
@@ -20,8 +20,7 @@ def register_tools(
         author_username: str | None = None,
         assignee_username: str | None = None,
     ) -> list[dict]:
-        token = get_access_token()
-        client = CompositeGitLabClient(token.token, service_client, url, ca_cert_path)
+        client = get_client(service_client, url, ca_cert_path)
         project = client.get_project(project_id)
         params = {'iterator': True}
         if state:
@@ -40,8 +39,7 @@ def register_tools(
         project_id: str,
         mr_iid: int,
     ) -> dict:
-        token = get_access_token()
-        client = CompositeGitLabClient(token.token, service_client, url, ca_cert_path)
+        client = get_client(service_client, url, ca_cert_path)
         project = client.get_project(project_id)
         mr = project.mergerequests.get(mr_iid)
 
@@ -52,8 +50,7 @@ def register_tools(
         project_id: str,
         mr_iid: int,
     ) -> dict:
-        token = get_access_token()
-        client = CompositeGitLabClient(token.token, service_client, url, ca_cert_path)
+        client = get_client(service_client, url, ca_cert_path)
         project = client.get_project(project_id)
         mr = project.mergerequests.get(mr_iid)
         changes = mr.changes()
@@ -79,8 +76,7 @@ def register_tools(
         project_id: str,
         mr_iid: int,
     ) -> list[dict]:
-        token = get_access_token()
-        client = CompositeGitLabClient(token.token, service_client, url, ca_cert_path)
+        client = get_client(service_client, url, ca_cert_path)
         project = client.get_project(project_id)
         mr = project.mergerequests.get(mr_iid)
         commits = mr.commits()
@@ -104,8 +100,7 @@ def register_tools(
         project_id: str,
         mr_iid: int,
     ) -> list[dict]:
-        token = get_access_token()
-        client = CompositeGitLabClient(token.token, service_client, url, ca_cert_path)
+        client = get_client(service_client, url, ca_cert_path)
         project = client.get_project(project_id)
         mr = project.mergerequests.get(mr_iid)
         pipelines = mr.pipelines()
@@ -128,8 +123,7 @@ def register_tools(
         project_id: str,
         mr_iid: int,
     ) -> list[dict]:
-        token = get_access_token()
-        client = CompositeGitLabClient(token.token, service_client, url, ca_cert_path)
+        client = get_client(service_client, url, ca_cert_path)
         project = client.get_project(project_id)
         mr = project.mergerequests.get(mr_iid)
         discussions = mr.discussions.list(iterator=True)
@@ -163,8 +157,7 @@ def register_tools(
         body: str,
         position: dict | None = None,
     ) -> dict:
-        token = get_access_token()
-        client = CompositeGitLabClient(token.token, service_client, url, ca_cert_path)
+        client = get_client(service_client, url, ca_cert_path)
         project = client.get_project(project_id)
         mr = project.mergerequests.get(mr_iid)
         params = {'body': body}
@@ -192,8 +185,7 @@ def register_tools(
         mr_iid: int,
         body: str,
     ) -> dict:
-        token = get_access_token()
-        client = CompositeGitLabClient(token.token, service_client, url, ca_cert_path)
+        client = get_client(service_client, url, ca_cert_path)
         project = client.get_project(project_id)
         mr = project.mergerequests.get(mr_iid)
         note = mr.notes.create({'body': body})
@@ -213,8 +205,7 @@ def register_tools(
         title: str,
         description: str | None = None,
     ) -> dict:
-        token = get_access_token()
-        client = CompositeGitLabClient(token.token, service_client, url, ca_cert_path)
+        client = get_client(service_client, url, ca_cert_path)
         project = client.get_project(project_id)
         params = {
             'source_branch': source_branch,
@@ -233,8 +224,7 @@ def register_tools(
         project_id: str,
         mr_iid: int,
     ) -> dict:
-        token = get_access_token()
-        client = CompositeGitLabClient(token.token, service_client, url, ca_cert_path)
+        client = get_client(service_client, url, ca_cert_path)
         project = client.get_project(project_id)
         mr = project.mergerequests.get(mr_iid)
         mr.approve()
@@ -246,8 +236,7 @@ def register_tools(
         project_id: str,
         mr_iid: int,
     ) -> dict:
-        token = get_access_token()
-        client = CompositeGitLabClient(token.token, service_client, url, ca_cert_path)
+        client = get_client(service_client, url, ca_cert_path)
         project = client.get_project(project_id)
         mr = project.mergerequests.get(mr_iid)
         mr.unapprove()
@@ -260,8 +249,7 @@ def register_tools(
         mr_iid: int,
         should_remove_source_branch: bool = False,
     ) -> dict:
-        token = get_access_token()
-        client = CompositeGitLabClient(token.token, service_client, url, ca_cert_path)
+        client = get_client(service_client, url, ca_cert_path)
         project = client.get_project(project_id)
         mr = project.mergerequests.get(mr_iid)
         params = {}
