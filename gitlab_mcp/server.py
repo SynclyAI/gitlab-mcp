@@ -3,6 +3,7 @@ from fastmcp import FastMCP
 from gitlab_mcp.auth import create_oauth_proxy
 from gitlab_mcp.config import Config
 from gitlab_mcp.client import GitLabClient
+from gitlab_mcp.tools import merge_requests, repository
 
 config = Config.from_env()
 auth = create_oauth_proxy(config)
@@ -28,7 +29,6 @@ def get_config() -> Config:
 
 
 def main():
-    from gitlab_mcp.tools import merge_requests, repository
     merge_requests.register_tools(mcp, get_service_client)
     repository.register_tools(mcp, get_service_client)
     mcp.run()
