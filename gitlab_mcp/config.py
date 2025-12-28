@@ -26,6 +26,7 @@ class Secrets:
 class Config:
     url: str
     secrets: Secrets
+    server_base_url: str = 'http://localhost:8000'
     ca_cert_path: Path | None = None
 
     @staticmethod
@@ -47,4 +48,11 @@ class Config:
             if not ca_cert_path.exists():
                 raise ValueError(f'CA certificate file not found: {ca_cert_path}')
 
-        return Config(url=url, secrets=secrets, ca_cert_path=ca_cert_path)
+        server_base_url = os.environ.get('MCP_SERVER_BASE_URL', 'http://localhost:8000')
+
+        return Config(
+            url=url,
+            secrets=secrets,
+            server_base_url=server_base_url,
+            ca_cert_path=ca_cert_path,
+        )

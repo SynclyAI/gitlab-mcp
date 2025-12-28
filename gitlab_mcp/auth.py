@@ -62,6 +62,6 @@ def create_oauth_proxy(config: Config) -> OAuthProxy:
         upstream_client_id=config.secrets.oauth_client_id,
         upstream_client_secret=config.secrets.oauth_client_secret,
         token_verifier=token_verifier,
-        base_url='http://localhost:8000',
+        base_url=config.server_base_url,
         redirect_path='callback',
     )
