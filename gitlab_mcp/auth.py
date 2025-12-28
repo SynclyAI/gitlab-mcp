@@ -75,6 +75,7 @@ def create_oauth_proxy(config: Config) -> OAuthProxy:
 def check_project_access(
     project_id: str | int,
     user_token: str,
+    service_client: GitLabClient,
     config: Config,
 ) -> None:
     user_client = GitLabClient(
@@ -87,11 +88,6 @@ def check_project_access(
     except Exception:
         raise PermissionDenied(f'User cannot access project {project_id}')
 
-    service_client = GitLabClient(
-        url=config.url,
-        token=config.secrets.service_token,
-        ca_cert_path=config.ca_cert_path,
-    )
     try:
         service_client.get_project(project_id)
     except Exception:
