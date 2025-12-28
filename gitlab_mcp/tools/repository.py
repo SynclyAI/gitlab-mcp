@@ -19,6 +19,8 @@ def register_tools(
         owned: bool | None = None,
         membership: bool | None = None,
     ) -> list[dict]:
+        token = get_access_token()
+        client = CompositeGitLabClient(token.token, service_client, url, ca_cert_path)
         params = {'iterator': True}
         if search:
             params['search'] = search
@@ -27,7 +29,7 @@ def register_tools(
         if membership is not None:
             params['membership'] = membership
 
-        projects = service_client.list_projects(**params)
+        projects = client.list_projects(**params)
 
         return [
             {

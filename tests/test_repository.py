@@ -7,9 +7,12 @@ from gitlab_mcp.tools import repository
 GITLAB_URL = 'https://gitlab.example.com'
 
 
-def test_list_projects(mock_client, mock_project):
+@patch('gitlab_mcp.tools.repository.CompositeGitLabClient')
+@patch('gitlab_mcp.tools.repository.get_access_token')
+def test_list_projects(mock_get_token, mock_composite_client, mock_client, mock_project):
     mcp = FastMCP('test')
-    mock_client.list_projects.return_value = [mock_project]
+    mock_get_token.return_value = MagicMock(token='user_token')
+    mock_composite_client.return_value.list_projects.return_value = [mock_project]
 
     repository.register_tools(mcp, mock_client, GITLAB_URL, None)
 
