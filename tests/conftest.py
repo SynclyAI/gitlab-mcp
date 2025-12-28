@@ -1,12 +1,12 @@
 import pytest
 from unittest.mock import MagicMock
 
-from gitlab_mcp.client import GitLabClient
+from gitlab_mcp.client import TokenGitLabClient
 
 
 @pytest.fixture
 def mock_client():
-    return MagicMock(spec=GitLabClient)
+    return MagicMock(spec=TokenGitLabClient)
 
 
 @pytest.fixture

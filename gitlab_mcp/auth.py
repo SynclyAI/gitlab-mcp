@@ -2,14 +2,7 @@ import httpx
 
 from fastmcp.server.auth import AccessToken, OAuthProxy, TokenVerifier
 
-from pathlib import Path
-
-from gitlab_mcp.client import GitLabClient
 from gitlab_mcp.config import Config
-
-
-class PermissionDenied(Exception):
-    pass
 
 
 class GitLabTokenVerifier(TokenVerifier):
@@ -72,26 +65,3 @@ def create_oauth_proxy(config: Config) -> OAuthProxy:
         base_url='http://localhost:8000',
         redirect_path='callback',
     )
-
-
-def check_project_access(
-    project_id: str | int,
-    user_token: str,
-    service_client: GitLabClient,
-    url: str,
-    ca_cert_path: Path | None,
-) -> None:
-    user_client = GitLabClient(
-        url=url,
-        token=user_token,
-        ca_cert_path=ca_cert_path,
-    )
-    try:
-        user_client.get_project(project_id)
-    except Exception:
-        raise PermissionDenied(f'User cannot access project {project_id}')
-
-    try:
-        service_client.get_project(project_id)
-    except Exception:
-        raise PermissionDenied(f'AI not enabled for project {project_id}')
