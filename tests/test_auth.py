@@ -26,7 +26,7 @@ def test_check_project_access_both_have_access(mock_config):
         mock_service_client = MagicMock()
         mock_client_class.return_value = mock_user_client
 
-        check_project_access('1', 'user_token', mock_service_client, mock_config)
+        check_project_access('1', 'user_token', mock_service_client, mock_config.url, mock_config.ca_cert_path)
 
         mock_user_client.get_project.assert_called_once_with('1')
         mock_service_client.get_project.assert_called_once_with('1')
@@ -40,7 +40,7 @@ def test_check_project_access_user_denied(mock_config):
         mock_client_class.return_value = mock_user_client
 
         with pytest.raises(PermissionDenied, match='User cannot access'):
-            check_project_access('1', 'user_token', mock_service_client, mock_config)
+            check_project_access('1', 'user_token', mock_service_client, mock_config.url, mock_config.ca_cert_path)
 
 
 def test_check_project_access_service_denied(mock_config):
@@ -51,4 +51,4 @@ def test_check_project_access_service_denied(mock_config):
         mock_client_class.return_value = mock_user_client
 
         with pytest.raises(PermissionDenied, match='AI not enabled'):
-            check_project_access('1', 'user_token', mock_service_client, mock_config)
+            check_project_access('1', 'user_token', mock_service_client, mock_config.url, mock_config.ca_cert_path)

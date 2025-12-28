@@ -20,8 +20,8 @@ def get_config() -> Config:
 
 
 def main():
-    merge_requests.register_tools(mcp, service_client)
-    repository.register_tools(mcp, service_client)
+    merge_requests.register_tools(mcp, service_client, config.url, config.ca_cert_path)
+    repository.register_tools(mcp, service_client, config.url, config.ca_cert_path)
     mcp.run()
 
 

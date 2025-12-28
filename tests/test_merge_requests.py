@@ -1,17 +1,22 @@
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, patch
 
 from fastmcp import FastMCP
 
 from gitlab_mcp.tools import merge_requests
 
+GITLAB_URL = 'https://gitlab.example.com'
 
-def test_list_merge_requests(mock_client, mock_merge_request):
+
+@patch('gitlab_mcp.tools.merge_requests.check_project_access')
+@patch('gitlab_mcp.tools.merge_requests.get_access_token')
+def test_list_merge_requests(mock_get_token, mock_check_access, mock_client, mock_merge_request):
     mcp = FastMCP('test')
+    mock_get_token.return_value = MagicMock(token='user_token')
     mock_project = MagicMock()
     mock_project.mergerequests.list.return_value = [mock_merge_request]
     mock_client.get_project.return_value = mock_project
 
-    merge_requests.register_tools(mcp, mock_client)
+    merge_requests.register_tools(mcp, mock_client, GITLAB_URL, None)
 
     tool = next(t for t in mcp._tool_manager._tools.values() if t.name == 'list_merge_requests')
     result = tool.fn(project_id='1')
@@ -22,13 +27,16 @@ def test_list_merge_requests(mock_client, mock_merge_request):
     assert result[0]['state'] == 'opened'
 
 
-def test_get_merge_request(mock_client, mock_merge_request):
+@patch('gitlab_mcp.tools.merge_requests.check_project_access')
+@patch('gitlab_mcp.tools.merge_requests.get_access_token')
+def test_get_merge_request(mock_get_token, mock_check_access, mock_client, mock_merge_request):
     mcp = FastMCP('test')
+    mock_get_token.return_value = MagicMock(token='user_token')
     mock_project = MagicMock()
     mock_project.mergerequests.get.return_value = mock_merge_request
     mock_client.get_project.return_value = mock_project
 
-    merge_requests.register_tools(mcp, mock_client)
+    merge_requests.register_tools(mcp, mock_client, GITLAB_URL, None)
 
     tool = next(t for t in mcp._tool_manager._tools.values() if t.name == 'get_merge_request')
     result = tool.fn(project_id='1', mr_iid=1)
@@ -38,8 +46,11 @@ def test_get_merge_request(mock_client, mock_merge_request):
     assert result['description'] == 'Test description'
 
 
-def test_get_merge_request_changes(mock_client, mock_merge_request):
+@patch('gitlab_mcp.tools.merge_requests.check_project_access')
+@patch('gitlab_mcp.tools.merge_requests.get_access_token')
+def test_get_merge_request_changes(mock_get_token, mock_check_access, mock_client, mock_merge_request):
     mcp = FastMCP('test')
+    mock_get_token.return_value = MagicMock(token='user_token')
     mock_project = MagicMock()
     mock_merge_request.changes.return_value = {
         'changes': [
@@ -58,7 +69,7 @@ def test_get_merge_request_changes(mock_client, mock_merge_request):
     mock_project.mergerequests.get.return_value = mock_merge_request
     mock_client.get_project.return_value = mock_project
 
-    merge_requests.register_tools(mcp, mock_client)
+    merge_requests.register_tools(mcp, mock_client, GITLAB_URL, None)
 
     tool = next(t for t in mcp._tool_manager._tools.values() if t.name == 'get_merge_request_changes')
     result = tool.fn(project_id='1', mr_iid=1)
@@ -68,8 +79,11 @@ def test_get_merge_request_changes(mock_client, mock_merge_request):
     assert '@@ -1 +1 @@' in result['changes'][0]['diff']
 
 
-def test_add_merge_request_comment(mock_client, mock_merge_request):
+@patch('gitlab_mcp.tools.merge_requests.check_project_access')
+@patch('gitlab_mcp.tools.merge_requests.get_access_token')
+def test_add_merge_request_comment(mock_get_token, mock_check_access, mock_client, mock_merge_request):
     mcp = FastMCP('test')
+    mock_get_token.return_value = MagicMock(token='user_token')
     mock_project = MagicMock()
     mock_note = MagicMock()
     mock_note.id = 1
@@ -80,7 +94,7 @@ def test_add_merge_request_comment(mock_client, mock_merge_request):
     mock_project.mergerequests.get.return_value = mock_merge_request
     mock_client.get_project.return_value = mock_project
 
-    merge_requests.register_tools(mcp, mock_client)
+    merge_requests.register_tools(mcp, mock_client, GITLAB_URL, None)
 
     tool = next(t for t in mcp._tool_manager._tools.values() if t.name == 'add_merge_request_comment')
     result = tool.fn(project_id='1', mr_iid=1, body='Test comment')
@@ -89,13 +103,16 @@ def test_add_merge_request_comment(mock_client, mock_merge_request):
     assert result['body'] == 'Test comment'
 
 
-def test_approve_merge_request(mock_client, mock_merge_request):
+@patch('gitlab_mcp.tools.merge_requests.check_project_access')
+@patch('gitlab_mcp.tools.merge_requests.get_access_token')
+def test_approve_merge_request(mock_get_token, mock_check_access, mock_client, mock_merge_request):
     mcp = FastMCP('test')
+    mock_get_token.return_value = MagicMock(token='user_token')
     mock_project = MagicMock()
     mock_project.mergerequests.get.return_value = mock_merge_request
     mock_client.get_project.return_value = mock_project
 
-    merge_requests.register_tools(mcp, mock_client)
+    merge_requests.register_tools(mcp, mock_client, GITLAB_URL, None)
 
     tool = next(t for t in mcp._tool_manager._tools.values() if t.name == 'approve_merge_request')
     result = tool.fn(project_id='1', mr_iid=1)

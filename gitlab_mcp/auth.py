@@ -2,8 +2,10 @@ import httpx
 
 from fastmcp.server.auth import AccessToken, OAuthProxy, TokenVerifier
 
-from gitlab_mcp.config import Config
+from pathlib import Path
+
 from gitlab_mcp.client import GitLabClient
+from gitlab_mcp.config import Config
 
 
 class PermissionDenied(Exception):
@@ -76,12 +78,13 @@ def check_project_access(
     project_id: str | int,
     user_token: str,
     service_client: GitLabClient,
-    config: Config,
+    url: str,
+    ca_cert_path: Path | None,
 ) -> None:
     user_client = GitLabClient(
-        url=config.url,
+        url=url,
         token=user_token,
-        ca_cert_path=config.ca_cert_path,
+        ca_cert_path=ca_cert_path,
     )
     try:
         user_client.get_project(project_id)
