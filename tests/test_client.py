@@ -1,7 +1,20 @@
 import pytest
 from unittest.mock import MagicMock, patch
 
-from gitlab_mcp.client import CompositeGitLabClient, PermissionDenied
+from gitlab_mcp.client import CompositeGitLabClient, PermissionDenied, TokenGitLabClient
+
+
+@patch('gitlab_mcp.client.gitlab.Gitlab')
+def test_token_client_init(mock_gitlab_class):
+    mock_gitlab = MagicMock()
+    mock_gitlab_class.return_value = mock_gitlab
+
+    client = TokenGitLabClient('https://gitlab.example.com', 'test-token')
+
+    mock_gitlab_class.assert_called_once_with(
+        url='https://gitlab.example.com',
+        private_token='test-token',
+    )
 
 
 @patch('gitlab_mcp.client.TokenGitLabClient')
@@ -17,7 +30,6 @@ def test_composite_client_both_have_access(mock_token_client_class):
         'user_token',
         mock_service_client,
         'https://gitlab.example.com',
-        None,
     )
 
     client.get_project('1')
@@ -38,7 +50,6 @@ def test_composite_client_user_denied(mock_token_client_class):
         'user_token',
         mock_service_client,
         'https://gitlab.example.com',
-        None,
     )
 
     with pytest.raises(PermissionDenied, match='User cannot access'):
@@ -58,7 +69,6 @@ def test_composite_client_service_denied(mock_token_client_class):
         'user_token',
         mock_service_client,
         'https://gitlab.example.com',
-        None,
     )
 
     with pytest.raises(PermissionDenied, match='AI not enabled'):
@@ -74,7 +84,6 @@ def test_composite_client_list_projects(mock_token_client_class):
         'user_token',
         mock_service_client,
         'https://gitlab.example.com',
-        None,
     )
 
     result = client.list_projects()
