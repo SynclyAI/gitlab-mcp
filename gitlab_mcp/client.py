@@ -1,3 +1,5 @@
+import os
+
 import gitlab
 from abc import ABC, abstractmethod
 
@@ -22,7 +24,11 @@ class GitLabClient(ABC):
 
 class TokenGitLabClient(GitLabClient):
     def __init__(self, url: str, token: str):
-        self._gl = gitlab.Gitlab(url=url, private_token=token)
+        self._gl = gitlab.Gitlab(
+            url=url,
+            private_token=token,
+            ssl_verify=os.environ.get('SSL_CERT_FILE', True),
+        )
 
     def get_project(self, project_id: str | int):
         return self._gl.projects.get(project_id)

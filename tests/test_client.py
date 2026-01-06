@@ -14,6 +14,7 @@ def test_token_client_init(mock_gitlab_class):
     mock_gitlab_class.assert_called_once_with(
         url='https://gitlab.example.com',
         private_token='test-token',
+        ssl_verify=True,
     )
 
 
