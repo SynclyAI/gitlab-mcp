@@ -8,6 +8,24 @@ GITLAB_URL = 'https://gitlab.example.com'
 
 
 @patch('gitlab_mcp.tools.merge_requests.get_client')
+def test_search_merge_requests(mock_get_client, mock_client, mock_merge_request):
+    mcp = FastMCP('test')
+    mock_get_client.return_value.list_merge_requests.return_value = [mock_merge_request]
+
+    merge_requests.register_tools(mcp, mock_client, GITLAB_URL)
+
+    tool = next(t for t in mcp._tool_manager._tools.values() if t.name == 'search_merge_requests')
+    result = tool.fn(state='opened', scope='all')
+
+    assert len(result) == 1
+    assert result[0]['iid'] == 1
+    assert result[0]['title'] == 'Test MR'
+    mock_get_client.return_value.list_merge_requests.assert_called_once_with(
+        iterator=True, state='opened', scope='all'
+    )
+
+
+@patch('gitlab_mcp.tools.merge_requests.get_client')
 def test_list_merge_requests(mock_get_client, mock_client, mock_merge_request):
     mcp = FastMCP('test')
     mock_project = MagicMock()

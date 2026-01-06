@@ -11,6 +11,31 @@ def register_tools(
 ):
 
     @mcp.tool
+    def search_merge_requests(
+        state: str | None = None,
+        scope: str | None = None,
+        author_username: str | None = None,
+        assignee_username: str | None = None,
+        search: str | None = None,
+    ) -> list[dict]:
+        client = get_client(service_client, url)
+        params = {'iterator': True}
+        if state:
+            params['state'] = state
+        if scope:
+            params['scope'] = scope
+        if author_username:
+            params['author_username'] = author_username
+        if assignee_username:
+            params['assignee_username'] = assignee_username
+        if search:
+            params['search'] = search
+
+        mrs = client.list_merge_requests(**params)
+
+        return [_serialize_mr(mr) for mr in mrs]
+
+    @mcp.tool
     def list_merge_requests(
         project_id: str,
         state: str | None = None,

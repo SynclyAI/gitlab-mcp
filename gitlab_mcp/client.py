@@ -15,6 +15,10 @@ class GitLabClient(ABC):
     def list_projects(self, **kwargs):
         pass
 
+    @abstractmethod
+    def list_merge_requests(self, **kwargs):
+        pass
+
 
 class TokenGitLabClient(GitLabClient):
     def __init__(self, url: str, token: str):
@@ -25,6 +29,9 @@ class TokenGitLabClient(GitLabClient):
 
     def list_projects(self, **kwargs):
         return self._gl.projects.list(**kwargs)
+
+    def list_merge_requests(self, **kwargs):
+        return self._gl.mergerequests.list(**kwargs)
 
     def get_current_user(self):
         return self._gl.user
@@ -56,3 +63,6 @@ class CompositeGitLabClient(GitLabClient):
 
     def list_projects(self, **kwargs):
         return self._service_client.list_projects(**kwargs)
+
+    def list_merge_requests(self, **kwargs):
+        return self._service_client.list_merge_requests(**kwargs)
