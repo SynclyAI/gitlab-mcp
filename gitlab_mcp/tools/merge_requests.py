@@ -17,6 +17,10 @@ def register_tools(
         author_username: str | None = None,
         assignee_username: str | None = None,
         search: str | None = None,
+        created_after: str | None = None,
+        created_before: str | None = None,
+        updated_after: str | None = None,
+        updated_before: str | None = None,
     ) -> list[dict]:
         client = get_client(service_client, url)
         params = {'iterator': True, 'scope': scope}
@@ -28,6 +32,14 @@ def register_tools(
             params['assignee_username'] = assignee_username
         if search:
             params['search'] = search
+        if created_after:
+            params['created_after'] = created_after
+        if created_before:
+            params['created_before'] = created_before
+        if updated_after:
+            params['updated_after'] = updated_after
+        if updated_before:
+            params['updated_before'] = updated_before
 
         mrs = client.list_merge_requests(**params)
 
