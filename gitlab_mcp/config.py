@@ -26,7 +26,7 @@ class Secrets:
 class Config:
     url: str
     secrets: Secrets
-    server_base_url: str = 'http://localhost:8000'
+    server_base_url: str | None = None
     ca_cert_path: Path | None = None
 
     @staticmethod
@@ -35,7 +35,7 @@ class Config:
         if not url:
             raise ValueError('GITLAB_URL environment variable is required')
 
-        secrets_path = Path(os.environ.get('GITLAB_SECRETS_PATH', '/run/secrets/gitlab.json'))
+        secrets_path = Path(os.environ.get('GITLAB_SECRETS_PATH'))
         if not secrets_path.exists():
             raise ValueError(f'Secrets file not found: {secrets_path}')
 
