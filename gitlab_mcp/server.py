@@ -14,7 +14,8 @@ UVICORN_LOG_CONFIG = {
             'datefmt': '%y/%m/%d %H:%M:%S',
         },
         'access': {
-            'format': '[%(asctime)s] %(levelname)-8s %(client_addr)s - "%(request_line)s" %(status_code)s',
+            '()': 'uvicorn.logging.AccessFormatter',
+            'fmt': '[%(asctime)s] %(levelprefix)s %(client_addr)s - "%(request_line)s" %(status_code)s',
             'datefmt': '%y/%m/%d %H:%M:%S',
         },
     },
