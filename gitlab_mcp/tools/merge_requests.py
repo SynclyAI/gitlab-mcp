@@ -13,17 +13,15 @@ def register_tools(
     @mcp.tool
     def search_merge_requests(
         state: str | None = None,
-        scope: str | None = None,
+        scope: str = 'all',
         author_username: str | None = None,
         assignee_username: str | None = None,
         search: str | None = None,
     ) -> list[dict]:
         client = get_client(service_client, url)
-        params = {'iterator': True}
+        params = {'iterator': True, 'scope': scope}
         if state:
             params['state'] = state
-        if scope:
-            params['scope'] = scope
         if author_username:
             params['author_username'] = author_username
         if assignee_username:
