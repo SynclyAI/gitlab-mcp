@@ -2,6 +2,7 @@ import json
 import os
 from dataclasses import dataclass
 from pathlib import Path
+from urllib.parse import urlparse
 
 
 @dataclass(frozen=True)
@@ -26,8 +27,17 @@ class Secrets:
 class Config:
     url: str
     secrets: Secrets
-    server_base_url: str | None = None
-    ca_cert_path: Path | None = None
+    server_base_url: str
+    ssl_cert_path: Path
+    ssl_key_path: Path
+
+    @property
+    def server_host(self) -> str:
+        return urlparse(self.server_base_url).hostname
+
+    @property
+    def server_port(self) -> int:
+        return urlparse(self.server_base_url).port
 
     @staticmethod
     def from_env() -> 'Config':
@@ -41,18 +51,34 @@ class Config:
 
         secrets = Secrets.from_file(secrets_path)
 
-        ca_cert_path = None
-        ca_cert_env = os.environ.get('GITLAB_CA_CERT_PATH')
-        if ca_cert_env:
-            ca_cert_path = Path(ca_cert_env)
-            if not ca_cert_path.exists():
-                raise ValueError(f'CA certificate file not found: {ca_cert_path}')
+        server_base_url = os.environ.get('MCP_SERVER_BASE_URL')
+        if not server_base_url:
+            raise ValueError('MCP_SERVER_BASE_URL environment variable is required')
 
-        server_base_url = os.environ.get('MCP_SERVER_BASE_URL', 'http://localhost:8000')
+        parsed_url = urlparse(server_base_url)
+        if parsed_url.scheme != 'https':
+            raise ValueError('MCP_SERVER_BASE_URL must use https scheme')
+        if not parsed_url.port:
+            raise ValueError('MCP_SERVER_BASE_URL must include explicit port number')
+
+        ssl_cert_env = os.environ.get('MCP_SSL_CERT_PATH')
+        if not ssl_cert_env:
+            raise ValueError('MCP_SSL_CERT_PATH environment variable is required')
+        ssl_cert_path = Path(ssl_cert_env)
+        if not ssl_cert_path.exists():
+            raise ValueError(f'SSL certificate file not found: {ssl_cert_path}')
+
+        ssl_key_env = os.environ.get('MCP_SSL_KEY_PATH')
+        if not ssl_key_env:
+            raise ValueError('MCP_SSL_KEY_PATH environment variable is required')
+        ssl_key_path = Path(ssl_key_env)
+        if not ssl_key_path.exists():
+            raise ValueError(f'SSL key file not found: {ssl_key_path}')
 
         return Config(
             url=url,
             secrets=secrets,
             server_base_url=server_base_url,
-            ca_cert_path=ca_cert_path,
+            ssl_cert_path=ssl_cert_path,
+            ssl_key_path=ssl_key_path,
         )

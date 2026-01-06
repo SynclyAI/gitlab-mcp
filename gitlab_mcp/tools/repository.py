@@ -1,5 +1,3 @@
-from pathlib import Path
-
 from fastmcp import FastMCP
 
 from gitlab_mcp.client import TokenGitLabClient
@@ -10,7 +8,6 @@ def register_tools(
     mcp: FastMCP,
     service_client: TokenGitLabClient,
     url: str,
-    ca_cert_path: Path | None,
 ):
 
     @mcp.tool
@@ -19,7 +16,7 @@ def register_tools(
         owned: bool | None = None,
         membership: bool | None = None,
     ) -> list[dict]:
-        client = get_client(service_client, url, ca_cert_path)
+        client = get_client(service_client, url)
         params = {'iterator': True}
         if search:
             params['search'] = search
@@ -48,7 +45,7 @@ def register_tools(
         ref: str | None = None,
         recursive: bool = False,
     ) -> list[dict]:
-        client = get_client(service_client, url, ca_cert_path)
+        client = get_client(service_client, url)
         project = client.get_project(project_id)
         params = {'iterator': True, 'recursive': recursive}
         if path:
@@ -75,7 +72,7 @@ def register_tools(
         file_path: str,
         ref: str | None = None,
     ) -> dict:
-        client = get_client(service_client, url, ca_cert_path)
+        client = get_client(service_client, url)
         project = client.get_project(project_id)
         params = {'file_path': file_path}
         if ref:
@@ -99,7 +96,7 @@ def register_tools(
         file_path: str,
         ref: str | None = None,
     ) -> list[dict]:
-        client = get_client(service_client, url, ca_cert_path)
+        client = get_client(service_client, url)
         project = client.get_project(project_id)
         params = {}
         if ref:
@@ -127,7 +124,7 @@ def register_tools(
         query: str,
         ref: str | None = None,
     ) -> list[dict]:
-        client = get_client(service_client, url, ca_cert_path)
+        client = get_client(service_client, url)
         project = client.get_project(project_id)
         params = {'scope': 'blobs', 'search': query}
         if ref:
@@ -153,7 +150,7 @@ def register_tools(
         project_id: str,
         search: str | None = None,
     ) -> list[dict]:
-        client = get_client(service_client, url, ca_cert_path)
+        client = get_client(service_client, url)
         project = client.get_project(project_id)
         params = {'iterator': True}
         if search:
@@ -186,7 +183,7 @@ def register_tools(
         since: str | None = None,
         until: str | None = None,
     ) -> list[dict]:
-        client = get_client(service_client, url, ca_cert_path)
+        client = get_client(service_client, url)
         project = client.get_project(project_id)
         params = {'iterator': True}
         if ref_name:
@@ -219,7 +216,7 @@ def register_tools(
         project_id: str,
         sha: str,
     ) -> dict:
-        client = get_client(service_client, url, ca_cert_path)
+        client = get_client(service_client, url)
         project = client.get_project(project_id)
         commit = project.commits.get(sha)
 

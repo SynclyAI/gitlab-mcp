@@ -1,6 +1,5 @@
 import gitlab
 from abc import ABC, abstractmethod
-from pathlib import Path
 
 
 class PermissionDenied(Exception):
@@ -18,12 +17,8 @@ class GitLabClient(ABC):
 
 
 class TokenGitLabClient(GitLabClient):
-    def __init__(self, url: str, token: str, ca_cert_path: Path | None = None):
-        ssl_verify: bool | str = True
-        if ca_cert_path:
-            ssl_verify = str(ca_cert_path)
-
-        self._gl = gitlab.Gitlab(url=url, private_token=token, ssl_verify=ssl_verify)
+    def __init__(self, url: str, token: str):
+        self._gl = gitlab.Gitlab(url=url, private_token=token)
 
     def get_project(self, project_id: str | int):
         return self._gl.projects.get(project_id)
@@ -44,9 +39,8 @@ class CompositeGitLabClient(GitLabClient):
         user_token: str,
         service_client: TokenGitLabClient,
         url: str,
-        ca_cert_path: Path | None,
     ):
-        self._user_client = TokenGitLabClient(url, user_token, ca_cert_path)
+        self._user_client = TokenGitLabClient(url, user_token)
         self._service_client = service_client
 
     def get_project(self, project_id: str | int):

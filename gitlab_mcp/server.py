@@ -11,7 +11,6 @@ mcp = FastMCP('GitLab MCP', auth=auth)
 service_client = TokenGitLabClient(
     url=config.url,
     token=config.secrets.service_token,
-    ca_cert_path=config.ca_cert_path,
 )
 
 
@@ -20,9 +19,17 @@ def get_config() -> Config:
 
 
 def main():
-    merge_requests.register_tools(mcp, service_client, config.url, config.ca_cert_path)
-    repository.register_tools(mcp, service_client, config.url, config.ca_cert_path)
-    mcp.run()
+    merge_requests.register_tools(mcp, service_client, config.url)
+    repository.register_tools(mcp, service_client, config.url)
+    mcp.run(
+        transport='http',
+        host=config.server_host,
+        port=config.server_port,
+        uvicorn_config={
+            'ssl_certfile': str(config.ssl_cert_path),
+            'ssl_keyfile': str(config.ssl_key_path),
+        },
+    )
 
 
 if __name__ == '__main__':
