@@ -5,6 +5,38 @@ from gitlab_mcp.config import Config
 from gitlab_mcp.client import TokenGitLabClient
 from gitlab_mcp.tools import merge_requests, repository
 
+UVICORN_LOG_CONFIG = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'formatters': {
+        'default': {
+            'format': '[%(asctime)s] %(levelname)-8s %(message)s',
+            'datefmt': '%y/%m/%d %H:%M:%S',
+        },
+        'access': {
+            'format': '[%(asctime)s] %(levelname)-8s %(client_addr)s - "%(request_line)s" %(status_code)s',
+            'datefmt': '%y/%m/%d %H:%M:%S',
+        },
+    },
+    'handlers': {
+        'default': {
+            'formatter': 'default',
+            'class': 'logging.StreamHandler',
+            'stream': 'ext://sys.stderr',
+        },
+        'access': {
+            'formatter': 'access',
+            'class': 'logging.StreamHandler',
+            'stream': 'ext://sys.stdout',
+        },
+    },
+    'loggers': {
+        'uvicorn': {'handlers': ['default'], 'level': 'INFO', 'propagate': False},
+        'uvicorn.error': {'level': 'INFO'},
+        'uvicorn.access': {'handlers': ['access'], 'level': 'INFO', 'propagate': False},
+    },
+}
+
 config = Config.from_env()
 auth = create_oauth_proxy(config)
 mcp = FastMCP('GitLab MCP', auth=auth)
@@ -28,6 +60,7 @@ def main():
         uvicorn_config={
             'ssl_certfile': str(config.ssl_cert_path),
             'ssl_keyfile': str(config.ssl_key_path),
+            'log_config': UVICORN_LOG_CONFIG,
         },
     )
 
