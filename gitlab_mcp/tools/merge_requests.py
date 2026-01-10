@@ -1,18 +1,168 @@
+from dataclasses import dataclass
+
 from fastmcp import FastMCP
+from gitlab.v4.objects import ProjectMergeRequest
 
 from gitlab_mcp.client import TokenGitLabClient
-from gitlab_mcp.models import (
-    ActionResult,
-    Commit,
-    Discussion,
-    MergeRequest,
-    MergeRequestChange,
-    MergeRequestChanges,
-    MergeRequestDetails,
-    Note,
-    Pipeline,
-)
 from gitlab_mcp.tools.common import get_client
+
+
+@dataclass
+class MergeRequest:
+    iid: int
+    title: str
+    state: str
+    author: str
+    source_branch: str
+    target_branch: str
+    web_url: str
+    created_at: str
+    updated_at: str
+    user_notes_count: int
+
+
+@dataclass
+class MergeRequestDetails:
+    iid: int
+    title: str
+    description: str | None
+    state: str
+    author: str
+    source_branch: str
+    target_branch: str
+    web_url: str
+    created_at: str
+    updated_at: str
+    merged_by: str | None
+    merged_at: str | None
+    labels: list[str]
+    milestone: str | None
+    assignees: list[str]
+    reviewers: list[str]
+    draft: bool
+    work_in_progress: bool
+    has_conflicts: bool
+    blocking_discussions_resolved: bool
+
+
+@dataclass
+class MergeRequestChange:
+    old_path: str
+    new_path: str
+    a_mode: str
+    b_mode: str
+    new_file: bool
+    renamed_file: bool
+    deleted_file: bool
+    diff: str
+
+
+@dataclass
+class MergeRequestChanges:
+    changes: list[MergeRequestChange]
+
+
+@dataclass
+class Commit:
+    id: str
+    short_id: str
+    title: str
+    message: str
+    author_name: str
+    author_email: str
+    authored_date: str
+    committed_date: str
+
+
+@dataclass
+class Pipeline:
+    id: int
+    sha: str
+    ref: str
+    status: str
+    web_url: str
+    created_at: str
+    updated_at: str
+
+
+@dataclass
+class Note:
+    id: int
+    body: str
+    author: str
+    created_at: str
+    updated_at: str | None = None
+    system: bool | None = None
+    resolvable: bool | None = None
+    resolved: bool = False
+    position: dict | None = None
+
+
+@dataclass
+class Discussion:
+    id: str
+    individual_note: bool
+    notes: list[Note]
+
+
+@dataclass
+class ActionResult:
+    status: str
+    mr_iid: int
+
+
+def mr_from_gitlab(mr: ProjectMergeRequest) -> MergeRequest:
+    return MergeRequest(
+        iid=mr.iid,
+        title=mr.title,
+        state=mr.state,
+        author=mr.author['username'],
+        source_branch=mr.source_branch,
+        target_branch=mr.target_branch,
+        web_url=mr.web_url,
+        created_at=mr.created_at,
+        updated_at=mr.updated_at,
+        user_notes_count=mr.user_notes_count,
+    )
+
+
+def mr_details_from_gitlab(mr: ProjectMergeRequest) -> MergeRequestDetails:
+    return MergeRequestDetails(
+        iid=mr.iid,
+        title=mr.title,
+        description=mr.description,
+        state=mr.state,
+        author=mr.author['username'],
+        source_branch=mr.source_branch,
+        target_branch=mr.target_branch,
+        web_url=mr.web_url,
+        created_at=mr.created_at,
+        updated_at=mr.updated_at,
+        merged_by=mr.merged_by['username'] if mr.merged_by else None,
+        merged_at=mr.merged_at,
+        labels=mr.labels,
+        milestone=mr.milestone['title'] if mr.milestone else None,
+        assignees=[a['username'] for a in mr.assignees],
+        reviewers=[r['username'] for r in mr.reviewers],
+        draft=mr.draft,
+        work_in_progress=mr.work_in_progress,
+        has_conflicts=mr.has_conflicts,
+        blocking_discussions_resolved=mr.blocking_discussions_resolved,
+    )
+
+
+def note_from_dict(n: dict) -> Note:
+    return Note(
+        id=n['id'],
+        body=n['body'],
+        author=n['author']['username'],
+        created_at=n['created_at'],
+        updated_at=n.get('updated_at'),
+        system=n.get('system'),
+        resolvable=n.get('resolvable'),
+        resolved=n.get('resolved', False),
+        position=n.get('position'),
+    )
 
 
 def register_tools(
@@ -54,7 +204,7 @@ def register_tools(
 
         mrs = client.list_merge_requests(**params)
 
-        return [MergeRequest.model_validate(mr, from_attributes=True) for mr in mrs]
+        return [mr_from_gitlab(mr) for mr in mrs]
 
     @mcp.tool
     def list_merge_requests(
@@ -75,7 +225,7 @@ def register_tools(
 
         mrs = project.mergerequests.list(**params)
 
-        return [MergeRequest.model_validate(mr, from_attributes=True) for mr in mrs]
+        return [mr_from_gitlab(mr) for mr in mrs]
 
     @mcp.tool
     def get_merge_request(
@@ -86,7 +236,7 @@ def register_tools(
         project = client.get_project(project_id)
         mr = project.mergerequests.get(mr_iid)
 
-        return MergeRequestDetails.model_validate(mr, from_attributes=True)
+        return mr_details_from_gitlab(mr)
 
     @mcp.tool
     def get_merge_request_changes(
@@ -140,7 +290,7 @@ def register_tools(
             Discussion(
                 id=d.id,
                 individual_note=d.individual_note,
-                notes=[Note(**n) for n in d.attributes['notes']],
+                notes=[note_from_dict(n) for n in d.attributes['notes']],
             )
             for d in discussions
         ]
@@ -164,7 +314,7 @@ def register_tools(
         return Discussion(
             id=discussion.id,
             individual_note=False,
-            notes=[Note(**n) for n in discussion.attributes['notes']],
+            notes=[note_from_dict(n) for n in discussion.attributes['notes']],
         )
 
     @mcp.tool
@@ -205,7 +355,7 @@ def register_tools(
 
         mr = project.mergerequests.create(params)
 
-        return MergeRequestDetails.model_validate(mr, from_attributes=True)
+        return mr_details_from_gitlab(mr)
 
     @mcp.tool
     def approve_merge_request(
