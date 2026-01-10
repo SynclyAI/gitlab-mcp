@@ -34,6 +34,7 @@ def mock_merge_request():
     mr.web_url = 'https://gitlab.example.com/group/test-project/-/merge_requests/1'
     mr.created_at = '2024-01-01T00:00:00Z'
     mr.updated_at = '2024-01-01T00:00:00Z'
+    mr.user_notes_count = 0
     mr.merged_by = None
     mr.merged_at = None
     mr.labels = []

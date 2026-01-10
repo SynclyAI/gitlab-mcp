@@ -304,6 +304,7 @@ def _serialize_mr(mr) -> dict:
         'web_url': mr.web_url,
         'created_at': mr.created_at,
         'updated_at': mr.updated_at,
+        'user_notes_count': mr.user_notes_count,
     }
 
 
