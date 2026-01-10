@@ -62,9 +62,15 @@ class MergeRequestDetails:
     work_in_progress: bool
     has_conflicts: bool
     blocking_discussions_resolved: bool
+    approved_by: list[str]
+    reactions: list[str]
 
     @staticmethod
     def from_gitlab(mr: ProjectMergeRequest) -> MergeRequestDetails:
+        approvals = mr.approvals.get()
+        approved_by = [a['user']['username'] for a in approvals.approved_by]
+        reactions = [e.name for e in mr.awardemojis.list(iterator=True)]
+
         return MergeRequestDetails(
             iid=mr.iid,
             title=mr.title,
@@ -86,6 +92,8 @@ class MergeRequestDetails:
             work_in_progress=mr.work_in_progress,
             has_conflicts=mr.has_conflicts,
             blocking_discussions_resolved=mr.blocking_discussions_resolved,
+            approved_by=approved_by,
+            reactions=reactions,
         )
 
 
