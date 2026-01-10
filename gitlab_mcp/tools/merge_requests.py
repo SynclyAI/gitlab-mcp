@@ -12,6 +12,7 @@ class MergeRequest:
     iid: int
     title: str
     state: str
+    draft: bool
     author: str
     source_branch: str
     target_branch: str
@@ -116,6 +117,7 @@ def mr_from_gitlab(mr: ProjectMergeRequest) -> MergeRequest:
         iid=mr.iid,
         title=mr.title,
         state=mr.state,
+        draft=mr.draft,
         author=mr.author['username'],
         source_branch=mr.source_branch,
         target_branch=mr.target_branch,
@@ -175,6 +177,7 @@ def register_tools(
     def search_merge_requests(
         state: str | None = None,
         scope: str = 'all',
+        wip: str | None = None,
         author_username: str | None = None,
         assignee_username: str | None = None,
         search: str | None = None,
@@ -187,6 +190,8 @@ def register_tools(
         params = {'iterator': True, 'scope': scope}
         if state:
             params['state'] = state
+        if wip:
+            params['wip'] = wip
         if author_username:
             params['author_username'] = author_username
         if assignee_username:
