@@ -18,8 +18,8 @@ def test_list_projects(mock_get_client, mock_client, mock_project):
     result = tool.fn()
 
     assert len(result) == 1
-    assert result[0]['id'] == 1
-    assert result[0]['name'] == 'test-project'
+    assert result[0].id == 1
+    assert result[0].name == 'test-project'
 
 
 @patch('gitlab_mcp.tools.repository.get_client')
@@ -37,8 +37,8 @@ def test_get_repository_tree(mock_get_client, mock_client):
     result = tool.fn(project_id='1')
 
     assert len(result) == 1
-    assert result[0]['name'] == 'README.md'
-    assert result[0]['type'] == 'blob'
+    assert result[0].name == 'README.md'
+    assert result[0].type == 'blob'
     mock_get_client.assert_called_once()
 
 
@@ -62,8 +62,8 @@ def test_get_file_content(mock_get_client, mock_client):
     tool = next(t for t in mcp._tool_manager._tools.values() if t.name == 'get_file_content')
     result = tool.fn(project_id='1', file_path='README.md')
 
-    assert result['file_path'] == 'README.md'
-    assert result['content'] == '# Test'
+    assert result.file_path == 'README.md'
+    assert result.content == '# Test'
 
 
 @patch('gitlab_mcp.tools.repository.get_client')
@@ -90,8 +90,8 @@ def test_get_file_blame(mock_get_client, mock_client):
     result = tool.fn(project_id='1', file_path='README.md')
 
     assert len(result) == 1
-    assert result[0]['commit']['id'] == 'abc123'
-    assert result[0]['lines'] == ['line1', 'line2']
+    assert result[0].commit.id == 'abc123'
+    assert result[0].lines == ['line1', 'line2']
 
 
 @patch('gitlab_mcp.tools.repository.get_client')
@@ -117,8 +117,8 @@ def test_search_code(mock_get_client, mock_client):
     result = tool.fn(project_id='1', query='def test')
 
     assert len(result) == 1
-    assert result[0]['path'] == 'src/test.py'
-    assert result[0]['data'] == 'def test():'
+    assert result[0].path == 'src/test.py'
+    assert result[0].data == 'def test():'
 
 
 @patch('gitlab_mcp.tools.repository.get_client')
@@ -147,8 +147,8 @@ def test_list_branches(mock_get_client, mock_client):
     result = tool.fn(project_id='1')
 
     assert len(result) == 1
-    assert result[0]['name'] == 'main'
-    assert result[0]['default'] is True
+    assert result[0].name == 'main'
+    assert result[0].default is True
 
 
 @patch('gitlab_mcp.tools.repository.get_client')
@@ -175,8 +175,8 @@ def test_list_commits(mock_get_client, mock_client):
     result = tool.fn(project_id='1')
 
     assert len(result) == 1
-    assert result[0]['id'] == 'abc123'
-    assert result[0]['title'] == 'Test commit'
+    assert result[0].id == 'abc123'
+    assert result[0].title == 'Test commit'
 
 
 @patch('gitlab_mcp.tools.repository.get_client')
@@ -204,6 +204,6 @@ def test_get_commit(mock_get_client, mock_client):
     tool = next(t for t in mcp._tool_manager._tools.values() if t.name == 'get_commit')
     result = tool.fn(project_id='1', sha='abc123')
 
-    assert result['id'] == 'abc123'
-    assert result['stats']['additions'] == 10
-    assert result['parent_ids'] == ['parent123']
+    assert result.id == 'abc123'
+    assert result.stats['additions'] == 10
+    assert result.parent_ids == ['parent123']

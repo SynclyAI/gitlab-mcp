@@ -18,8 +18,8 @@ def test_search_merge_requests(mock_get_client, mock_client, mock_merge_request)
     result = tool.fn(state='opened', scope='all')
 
     assert len(result) == 1
-    assert result[0]['iid'] == 1
-    assert result[0]['title'] == 'Test MR'
+    assert result[0].iid == 1
+    assert result[0].title == 'Test MR'
     mock_get_client.return_value.list_merge_requests.assert_called_once_with(
         iterator=True, state='opened', scope='all'
     )
@@ -38,9 +38,9 @@ def test_list_merge_requests(mock_get_client, mock_client, mock_merge_request):
     result = tool.fn(project_id='1')
 
     assert len(result) == 1
-    assert result[0]['iid'] == 1
-    assert result[0]['title'] == 'Test MR'
-    assert result[0]['state'] == 'opened'
+    assert result[0].iid == 1
+    assert result[0].title == 'Test MR'
+    assert result[0].state == 'opened'
 
 
 @patch('gitlab_mcp.tools.merge_requests.get_client')
@@ -55,9 +55,9 @@ def test_get_merge_request(mock_get_client, mock_client, mock_merge_request):
     tool = next(t for t in mcp._tool_manager._tools.values() if t.name == 'get_merge_request')
     result = tool.fn(project_id='1', mr_iid=1)
 
-    assert result['iid'] == 1
-    assert result['title'] == 'Test MR'
-    assert result['description'] == 'Test description'
+    assert result.iid == 1
+    assert result.title == 'Test MR'
+    assert result.description == 'Test description'
 
 
 @patch('gitlab_mcp.tools.merge_requests.get_client')
@@ -86,9 +86,9 @@ def test_get_merge_request_changes(mock_get_client, mock_client, mock_merge_requ
     tool = next(t for t in mcp._tool_manager._tools.values() if t.name == 'get_merge_request_changes')
     result = tool.fn(project_id='1', mr_iid=1)
 
-    assert len(result['changes']) == 1
-    assert result['changes'][0]['old_path'] == 'file.py'
-    assert '@@ -1 +1 @@' in result['changes'][0]['diff']
+    assert len(result.changes) == 1
+    assert result.changes[0].old_path == 'file.py'
+    assert '@@ -1 +1 @@' in result.changes[0].diff
 
 
 @patch('gitlab_mcp.tools.merge_requests.get_client')
@@ -116,8 +116,8 @@ def test_get_mr_commits(mock_get_client, mock_client, mock_merge_request):
     result = tool.fn(project_id='1', mr_iid=1)
 
     assert len(result) == 1
-    assert result[0]['id'] == 'abc123'
-    assert result[0]['title'] == 'Test commit'
+    assert result[0].id == 'abc123'
+    assert result[0].title == 'Test commit'
 
 
 @patch('gitlab_mcp.tools.merge_requests.get_client')
@@ -144,8 +144,8 @@ def test_get_mr_pipelines(mock_get_client, mock_client, mock_merge_request):
     result = tool.fn(project_id='1', mr_iid=1)
 
     assert len(result) == 1
-    assert result[0]['id'] == 123
-    assert result[0]['status'] == 'success'
+    assert result[0].id == 123
+    assert result[0].status == 'success'
 
 
 @patch('gitlab_mcp.tools.merge_requests.get_client')
@@ -180,9 +180,9 @@ def test_get_mr_discussions(mock_get_client, mock_client, mock_merge_request):
     result = tool.fn(project_id='1', mr_iid=1)
 
     assert len(result) == 1
-    assert result[0]['id'] == 'disc123'
-    assert len(result[0]['notes']) == 1
-    assert result[0]['notes'][0]['body'] == 'Test note'
+    assert result[0].id == 'disc123'
+    assert len(result[0].notes) == 1
+    assert result[0].notes[0].body == 'Test note'
 
 
 @patch('gitlab_mcp.tools.merge_requests.get_client')
@@ -210,8 +210,8 @@ def test_add_mr_discussion(mock_get_client, mock_client, mock_merge_request):
     tool = next(t for t in mcp._tool_manager._tools.values() if t.name == 'add_mr_discussion')
     result = tool.fn(project_id='1', mr_iid=1, body='New discussion')
 
-    assert result['id'] == 'disc123'
-    assert len(result['notes']) == 1
+    assert result.id == 'disc123'
+    assert len(result.notes) == 1
 
 
 @patch('gitlab_mcp.tools.merge_requests.get_client')
@@ -232,8 +232,8 @@ def test_add_merge_request_comment(mock_get_client, mock_client, mock_merge_requ
     tool = next(t for t in mcp._tool_manager._tools.values() if t.name == 'add_merge_request_comment')
     result = tool.fn(project_id='1', mr_iid=1, body='Test comment')
 
-    assert result['id'] == 1
-    assert result['body'] == 'Test comment'
+    assert result.id == 1
+    assert result.body == 'Test comment'
 
 
 @patch('gitlab_mcp.tools.merge_requests.get_client')
@@ -253,8 +253,8 @@ def test_create_merge_request(mock_get_client, mock_client, mock_merge_request):
         title='Test MR',
     )
 
-    assert result['iid'] == 1
-    assert result['title'] == 'Test MR'
+    assert result.iid == 1
+    assert result.title == 'Test MR'
     mock_project.mergerequests.create.assert_called_once()
 
 
@@ -271,8 +271,8 @@ def test_approve_merge_request(mock_get_client, mock_client, mock_merge_request)
     result = tool.fn(project_id='1', mr_iid=1)
 
     mock_merge_request.approve.assert_called_once()
-    assert result['status'] == 'approved'
-    assert result['mr_iid'] == 1
+    assert result.status == 'approved'
+    assert result.mr_iid == 1
 
 
 @patch('gitlab_mcp.tools.merge_requests.get_client')
@@ -288,8 +288,8 @@ def test_unapprove_merge_request(mock_get_client, mock_client, mock_merge_reques
     result = tool.fn(project_id='1', mr_iid=1)
 
     mock_merge_request.unapprove.assert_called_once()
-    assert result['status'] == 'unapproved'
-    assert result['mr_iid'] == 1
+    assert result.status == 'unapproved'
+    assert result.mr_iid == 1
 
 
 @patch('gitlab_mcp.tools.merge_requests.get_client')
@@ -305,5 +305,5 @@ def test_merge_merge_request(mock_get_client, mock_client, mock_merge_request):
     result = tool.fn(project_id='1', mr_iid=1)
 
     mock_merge_request.merge.assert_called_once()
-    assert result['status'] == 'merged'
-    assert result['mr_iid'] == 1
+    assert result.status == 'merged'
+    assert result.mr_iid == 1
