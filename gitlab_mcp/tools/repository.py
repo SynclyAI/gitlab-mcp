@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from dataclasses import dataclass
 
 from fastmcp import FastMCP
@@ -14,6 +16,16 @@ class Project:
     path_with_namespace: str
     web_url: str
     description: str | None
+
+    @staticmethod
+    def from_gitlab(p: GitLabProject) -> Project:
+        return Project(
+            id=p.id,
+            name=p.name,
+            path_with_namespace=p.path_with_namespace,
+            web_url=p.web_url,
+            description=p.description,
+        )
 
 
 @dataclass
@@ -80,6 +92,17 @@ class Branch:
     web_url: str
     commit: BranchCommit
 
+    @staticmethod
+    def from_gitlab(b: ProjectBranch) -> Branch:
+        return Branch(
+            name=b.name,
+            merged=b.merged,
+            protected=b.protected,
+            default=b.default,
+            web_url=b.web_url,
+            commit=BranchCommit(**b.commit),
+        )
+
 
 @dataclass
 class CommitListItem:
@@ -93,6 +116,21 @@ class CommitListItem:
     committer_name: str
     committed_date: str
     web_url: str
+
+    @staticmethod
+    def from_gitlab(c: ProjectCommit) -> CommitListItem:
+        return CommitListItem(
+            id=c.id,
+            short_id=c.short_id,
+            title=c.title,
+            message=c.message,
+            author_name=c.author_name,
+            author_email=c.author_email,
+            authored_date=c.authored_date,
+            committer_name=c.committer_name,
+            committed_date=c.committed_date,
+            web_url=c.web_url,
+        )
 
 
 @dataclass
@@ -110,58 +148,22 @@ class CommitDetails:
     parent_ids: list[str] | None = None
     stats: dict | None = None
 
-
-def project_from_gitlab(p: GitLabProject) -> Project:
-    return Project(
-        id=p.id,
-        name=p.name,
-        path_with_namespace=p.path_with_namespace,
-        web_url=p.web_url,
-        description=p.description,
-    )
-
-
-def branch_from_gitlab(b: ProjectBranch) -> Branch:
-    return Branch(
-        name=b.name,
-        merged=b.merged,
-        protected=b.protected,
-        default=b.default,
-        web_url=b.web_url,
-        commit=BranchCommit(**b.commit),
-    )
-
-
-def commit_list_item_from_gitlab(c: ProjectCommit) -> CommitListItem:
-    return CommitListItem(
-        id=c.id,
-        short_id=c.short_id,
-        title=c.title,
-        message=c.message,
-        author_name=c.author_name,
-        author_email=c.author_email,
-        authored_date=c.authored_date,
-        committer_name=c.committer_name,
-        committed_date=c.committed_date,
-        web_url=c.web_url,
-    )
-
-
-def commit_details_from_gitlab(c: ProjectCommit) -> CommitDetails:
-    return CommitDetails(
-        id=c.id,
-        short_id=c.short_id,
-        title=c.title,
-        message=c.message,
-        author_name=c.author_name,
-        author_email=c.author_email,
-        authored_date=c.authored_date,
-        committer_name=c.committer_name,
-        committed_date=c.committed_date,
-        web_url=c.web_url,
-        parent_ids=c.parent_ids,
-        stats=c.stats,
-    )
+    @staticmethod
+    def from_gitlab(c: ProjectCommit) -> CommitDetails:
+        return CommitDetails(
+            id=c.id,
+            short_id=c.short_id,
+            title=c.title,
+            message=c.message,
+            author_name=c.author_name,
+            author_email=c.author_email,
+            authored_date=c.authored_date,
+            committer_name=c.committer_name,
+            committed_date=c.committed_date,
+            web_url=c.web_url,
+            parent_ids=c.parent_ids,
+            stats=c.stats,
+        )
 
 
 def register_tools(
@@ -187,7 +189,7 @@ def register_tools(
 
         projects = client.list_projects(**params)
 
-        return [project_from_gitlab(p) for p in projects]
+        return [Project.from_gitlab(p) for p in projects]
 
     @mcp.tool
     def get_repository_tree(
@@ -283,7 +285,7 @@ def register_tools(
 
         branches = project.branches.list(**params)
 
-        return [branch_from_gitlab(b) for b in branches]
+        return [Branch.from_gitlab(b) for b in branches]
 
     @mcp.tool
     def list_commits(
@@ -304,7 +306,7 @@ def register_tools(
 
         commits = project.commits.list(**params)
 
-        return [commit_list_item_from_gitlab(c) for c in commits]
+        return [CommitListItem.from_gitlab(c) for c in commits]
 
     @mcp.tool
     def get_commit(
@@ -315,4 +317,4 @@ def register_tools(
         project = client.get_project(project_id)
         commit = project.commits.get(sha)
 
-        return commit_details_from_gitlab(commit)
+        return CommitDetails.from_gitlab(commit)
