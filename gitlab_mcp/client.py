@@ -85,6 +85,12 @@ class CompositeGitLabClient(GitLabClient):
         except Exception:
             raise PermissionDenied(f'AI not enabled for project {project_id}')
 
+    def get_user_project(self, project_id: str | int):
+        try:
+            return self._user_client.get_project(project_id)
+        except Exception:
+            raise PermissionDenied(f'User cannot access project {project_id}')
+
     def list_projects(self, **kwargs):
         return self._service_client.list_projects(**kwargs)
 

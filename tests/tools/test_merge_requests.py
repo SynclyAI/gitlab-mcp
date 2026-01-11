@@ -183,8 +183,8 @@ def test_get_mr_discussions(mock_get_client, mock_client, mock_merge_request):
     assert result[0].notes[0].body == 'Test note'
 
 
-@patch('gitlab_mcp.tools.merge_requests.get_user_client')
-def test_add_mr_discussion(mock_get_user_client, mock_client, mock_merge_request):
+@patch('gitlab_mcp.tools.merge_requests.get_client')
+def test_add_mr_discussion(mock_get_client, mock_client, mock_merge_request):
     mcp = FastMCP('test')
     mock_project = MagicMock()
     mock_discussion = MagicMock()
@@ -201,7 +201,7 @@ def test_add_mr_discussion(mock_get_user_client, mock_client, mock_merge_request
     }
     mock_merge_request.discussions.create.return_value = mock_discussion
     mock_project.mergerequests.get.return_value = mock_merge_request
-    mock_get_user_client.return_value.get_project.return_value = mock_project
+    mock_get_client.return_value.get_user_project.return_value = mock_project
 
     merge_requests.register_tools(mcp, mock_client, GITLAB_URL)
 
@@ -212,8 +212,8 @@ def test_add_mr_discussion(mock_get_user_client, mock_client, mock_merge_request
     assert len(result.notes) == 1
 
 
-@patch('gitlab_mcp.tools.merge_requests.get_user_client')
-def test_add_merge_request_comment(mock_get_user_client, mock_client, mock_merge_request):
+@patch('gitlab_mcp.tools.merge_requests.get_client')
+def test_add_merge_request_comment(mock_get_client, mock_client, mock_merge_request):
     mcp = FastMCP('test')
     mock_project = MagicMock()
     mock_note = MagicMock()
@@ -223,7 +223,7 @@ def test_add_merge_request_comment(mock_get_user_client, mock_client, mock_merge
     mock_note.created_at = '2024-01-01T00:00:00Z'
     mock_merge_request.notes.create.return_value = mock_note
     mock_project.mergerequests.get.return_value = mock_merge_request
-    mock_get_user_client.return_value.get_project.return_value = mock_project
+    mock_get_client.return_value.get_user_project.return_value = mock_project
 
     merge_requests.register_tools(mcp, mock_client, GITLAB_URL)
 
@@ -234,12 +234,12 @@ def test_add_merge_request_comment(mock_get_user_client, mock_client, mock_merge
     assert result.body == 'Test comment'
 
 
-@patch('gitlab_mcp.tools.merge_requests.get_user_client')
-def test_create_merge_request(mock_get_user_client, mock_client, mock_merge_request):
+@patch('gitlab_mcp.tools.merge_requests.get_client')
+def test_create_merge_request(mock_get_client, mock_client, mock_merge_request):
     mcp = FastMCP('test')
     mock_project = MagicMock()
     mock_project.mergerequests.create.return_value = mock_merge_request
-    mock_get_user_client.return_value.get_project.return_value = mock_project
+    mock_get_client.return_value.get_user_project.return_value = mock_project
 
     merge_requests.register_tools(mcp, mock_client, GITLAB_URL)
 
@@ -256,12 +256,12 @@ def test_create_merge_request(mock_get_user_client, mock_client, mock_merge_requ
     mock_project.mergerequests.create.assert_called_once()
 
 
-@patch('gitlab_mcp.tools.merge_requests.get_user_client')
-def test_approve_merge_request(mock_get_user_client, mock_client, mock_merge_request):
+@patch('gitlab_mcp.tools.merge_requests.get_client')
+def test_approve_merge_request(mock_get_client, mock_client, mock_merge_request):
     mcp = FastMCP('test')
     mock_project = MagicMock()
     mock_project.mergerequests.get.return_value = mock_merge_request
-    mock_get_user_client.return_value.get_project.return_value = mock_project
+    mock_get_client.return_value.get_user_project.return_value = mock_project
 
     merge_requests.register_tools(mcp, mock_client, GITLAB_URL)
 
@@ -273,12 +273,12 @@ def test_approve_merge_request(mock_get_user_client, mock_client, mock_merge_req
     assert result.mr_iid == 1
 
 
-@patch('gitlab_mcp.tools.merge_requests.get_user_client')
-def test_unapprove_merge_request(mock_get_user_client, mock_client, mock_merge_request):
+@patch('gitlab_mcp.tools.merge_requests.get_client')
+def test_unapprove_merge_request(mock_get_client, mock_client, mock_merge_request):
     mcp = FastMCP('test')
     mock_project = MagicMock()
     mock_project.mergerequests.get.return_value = mock_merge_request
-    mock_get_user_client.return_value.get_project.return_value = mock_project
+    mock_get_client.return_value.get_user_project.return_value = mock_project
 
     merge_requests.register_tools(mcp, mock_client, GITLAB_URL)
 
@@ -290,12 +290,12 @@ def test_unapprove_merge_request(mock_get_user_client, mock_client, mock_merge_r
     assert result.mr_iid == 1
 
 
-@patch('gitlab_mcp.tools.merge_requests.get_user_client')
-def test_merge_merge_request(mock_get_user_client, mock_client, mock_merge_request):
+@patch('gitlab_mcp.tools.merge_requests.get_client')
+def test_merge_merge_request(mock_get_client, mock_client, mock_merge_request):
     mcp = FastMCP('test')
     mock_project = MagicMock()
     mock_project.mergerequests.get.return_value = mock_merge_request
-    mock_get_user_client.return_value.get_project.return_value = mock_project
+    mock_get_client.return_value.get_user_project.return_value = mock_project
 
     merge_requests.register_tools(mcp, mock_client, GITLAB_URL)
 
