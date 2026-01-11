@@ -108,6 +108,19 @@ class MergeRequestChange:
     deleted_file: bool
     diff: str
 
+    @staticmethod
+    def from_dict(c: dict) -> MergeRequestChange:
+        return MergeRequestChange(
+            old_path=c['old_path'],
+            new_path=c['new_path'],
+            a_mode=c['a_mode'],
+            b_mode=c['b_mode'],
+            new_file=c['new_file'],
+            renamed_file=c['renamed_file'],
+            deleted_file=c['deleted_file'],
+            diff=c['diff'],
+        )
+
 
 @dataclass
 class MergeRequestChanges:
@@ -264,7 +277,7 @@ def register_tools(
         changes = mr.changes()
 
         return MergeRequestChanges(
-            changes=[MergeRequestChange(**c) for c in changes['changes']]
+            changes=[MergeRequestChange.from_dict(c) for c in changes['changes']]
         )
 
     @mcp.tool
