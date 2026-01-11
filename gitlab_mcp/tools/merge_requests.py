@@ -162,6 +162,18 @@ class Pipeline:
     created_at: str
     updated_at: str
 
+    @staticmethod
+    def from_dict(p: dict) -> Pipeline:
+        return Pipeline(
+            id=p['id'],
+            sha=p['sha'],
+            ref=p['ref'],
+            status=p['status'],
+            web_url=p['web_url'],
+            created_at=p['created_at'],
+            updated_at=p['updated_at'],
+        )
+
 
 @dataclass
 class Note:
@@ -315,7 +327,7 @@ def register_tools(
         mr = project.mergerequests.get(mr_iid)
         pipelines = mr.pipelines()
 
-        return [Pipeline(**p) for p in pipelines]
+        return [Pipeline.from_dict(p) for p in pipelines]
 
     @mcp.tool
     def get_mr_discussions(

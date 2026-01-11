@@ -36,6 +36,16 @@ class TreeItem:
     path: str
     mode: str
 
+    @staticmethod
+    def from_dict(item: dict) -> TreeItem:
+        return TreeItem(
+            id=item['id'],
+            name=item['name'],
+            type=item['type'],
+            path=item['path'],
+            mode=item['mode'],
+        )
+
 
 @dataclass
 class FileContent:
@@ -72,6 +82,18 @@ class CodeSearchResult:
     ref: str
     startline: int
     project_id: int
+
+    @staticmethod
+    def from_dict(r: dict) -> CodeSearchResult:
+        return CodeSearchResult(
+            basename=r['basename'],
+            data=r['data'],
+            path=r['path'],
+            filename=r['filename'],
+            ref=r['ref'],
+            startline=r['startline'],
+            project_id=r['project_id'],
+        )
 
 
 @dataclass
@@ -208,7 +230,7 @@ def register_tools(
 
         items = project.repository_tree(**params)
 
-        return [TreeItem(**item) for item in items]
+        return [TreeItem.from_dict(item) for item in items]
 
     @mcp.tool
     def get_file_content(
@@ -270,7 +292,7 @@ def register_tools(
 
         results = project.search(**params)
 
-        return [CodeSearchResult(**r) for r in results]
+        return [CodeSearchResult.from_dict(r) for r in results]
 
     @mcp.tool
     def list_branches(
