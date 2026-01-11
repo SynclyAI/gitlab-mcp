@@ -138,6 +138,19 @@ class Commit:
     authored_date: str
     committed_date: str
 
+    @staticmethod
+    def from_gitlab(c) -> Commit:
+        return Commit(
+            id=c.id,
+            short_id=c.short_id,
+            title=c.title,
+            message=c.message,
+            author_name=c.author_name,
+            author_email=c.author_email,
+            authored_date=c.authored_date,
+            committed_date=c.committed_date,
+        )
+
 
 @dataclass
 class Pipeline:
@@ -290,7 +303,7 @@ def register_tools(
         mr = project.mergerequests.get(mr_iid)
         commits = mr.commits()
 
-        return [Commit(**c) for c in commits]
+        return [Commit.from_gitlab(c) for c in commits]
 
     @mcp.tool
     def get_mr_pipelines(

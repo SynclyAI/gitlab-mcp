@@ -95,18 +95,16 @@ def test_get_merge_request_changes(mock_get_client, mock_client, mock_merge_requ
 def test_get_mr_commits(mock_get_client, mock_client, mock_merge_request):
     mcp = FastMCP('test')
     mock_project = MagicMock()
-    mock_merge_request.commits.return_value = [
-        {
-            'id': 'abc123',
-            'short_id': 'abc123',
-            'title': 'Test commit',
-            'message': 'Test commit message',
-            'author_name': 'Test User',
-            'author_email': 'test@example.com',
-            'authored_date': '2024-01-01T00:00:00Z',
-            'committed_date': '2024-01-01T00:00:00Z',
-        }
-    ]
+    mock_commit = MagicMock()
+    mock_commit.id = 'abc123'
+    mock_commit.short_id = 'abc123'
+    mock_commit.title = 'Test commit'
+    mock_commit.message = 'Test commit message'
+    mock_commit.author_name = 'Test User'
+    mock_commit.author_email = 'test@example.com'
+    mock_commit.authored_date = '2024-01-01T00:00:00Z'
+    mock_commit.committed_date = '2024-01-01T00:00:00Z'
+    mock_merge_request.commits.return_value = [mock_commit]
     mock_project.mergerequests.get.return_value = mock_merge_request
     mock_get_client.return_value.get_project.return_value = mock_project
 
