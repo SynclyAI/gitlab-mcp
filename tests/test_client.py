@@ -18,11 +18,11 @@ def test_token_client_init(mock_gitlab_class):
     )
 
 
-@patch('gitlab_mcp.client.TokenGitLabClient')
-def test_composite_client_both_have_access(mock_token_client_class):
+@patch('gitlab_mcp.client.OAuthGitLabClient')
+def test_composite_client_both_have_access(mock_oauth_client_class):
     mock_user_client = MagicMock()
     mock_user_client.get_project.return_value = MagicMock()
-    mock_token_client_class.return_value = mock_user_client
+    mock_oauth_client_class.return_value = mock_user_client
 
     mock_service_client = MagicMock()
     mock_service_client.get_project.return_value = MagicMock()
@@ -39,11 +39,11 @@ def test_composite_client_both_have_access(mock_token_client_class):
     mock_service_client.get_project.assert_called_once_with('1')
 
 
-@patch('gitlab_mcp.client.TokenGitLabClient')
-def test_composite_client_user_denied(mock_token_client_class):
+@patch('gitlab_mcp.client.OAuthGitLabClient')
+def test_composite_client_user_denied(mock_oauth_client_class):
     mock_user_client = MagicMock()
     mock_user_client.get_project.side_effect = Exception('Not found')
-    mock_token_client_class.return_value = mock_user_client
+    mock_oauth_client_class.return_value = mock_user_client
 
     mock_service_client = MagicMock()
 
@@ -57,11 +57,11 @@ def test_composite_client_user_denied(mock_token_client_class):
         client.get_project('1')
 
 
-@patch('gitlab_mcp.client.TokenGitLabClient')
-def test_composite_client_service_denied(mock_token_client_class):
+@patch('gitlab_mcp.client.OAuthGitLabClient')
+def test_composite_client_service_denied(mock_oauth_client_class):
     mock_user_client = MagicMock()
     mock_user_client.get_project.return_value = MagicMock()
-    mock_token_client_class.return_value = mock_user_client
+    mock_oauth_client_class.return_value = mock_user_client
 
     mock_service_client = MagicMock()
     mock_service_client.get_project.side_effect = Exception('Not found')
@@ -76,8 +76,8 @@ def test_composite_client_service_denied(mock_token_client_class):
         client.get_project('1')
 
 
-@patch('gitlab_mcp.client.TokenGitLabClient')
-def test_composite_client_list_projects(mock_token_client_class):
+@patch('gitlab_mcp.client.OAuthGitLabClient')
+def test_composite_client_list_projects(mock_oauth_client_class):
     mock_service_client = MagicMock()
     mock_service_client.list_projects.return_value = [MagicMock()]
 

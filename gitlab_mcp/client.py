@@ -46,6 +46,24 @@ class TokenGitLabClient(GitLabClient):
         self._gl.auth()
 
 
+class OAuthGitLabClient(GitLabClient):
+    def __init__(self, url: str, oauth_token: str):
+        self._gl = gitlab.Gitlab(
+            url=url,
+            oauth_token=oauth_token,
+            ssl_verify=os.environ.get('SSL_CERT_FILE', True),
+        )
+
+    def get_project(self, project_id: str | int):
+        return self._gl.projects.get(project_id)
+
+    def list_projects(self, **kwargs):
+        return self._gl.projects.list(**kwargs)
+
+    def list_merge_requests(self, **kwargs):
+        return self._gl.mergerequests.list(**kwargs)
+
+
 class CompositeGitLabClient(GitLabClient):
     def __init__(
         self,
@@ -53,7 +71,7 @@ class CompositeGitLabClient(GitLabClient):
         service_client: TokenGitLabClient,
         url: str,
     ):
-        self._user_client = TokenGitLabClient(url, user_token)
+        self._user_client = OAuthGitLabClient(url, user_token)
         self._service_client = service_client
 
     def get_project(self, project_id: str | int):
