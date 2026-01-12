@@ -11,7 +11,7 @@ def create_oauth_proxy(config: Config) -> OAuthProxy:
         introspection_url=f'{gitlab_url}/oauth/introspect',
         client_id=config.secrets.oauth_client_id,
         client_secret=config.secrets.oauth_client_secret,
-        required_scopes=['read_user', 'read_api', 'read_repository'],
+        required_scopes=['read_user', 'api', 'read_repository'],
     )
 
     return OAuthProxy(
