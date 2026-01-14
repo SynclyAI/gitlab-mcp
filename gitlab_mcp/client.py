@@ -8,6 +8,10 @@ class PermissionDenied(Exception):
     pass
 
 
+class ProjectNotFound(Exception):
+    pass
+
+
 class GitLabClient(ABC):
     @abstractmethod
     def get_project(self, project_id: str | int):
@@ -77,18 +81,24 @@ class CompositeGitLabClient(GitLabClient):
     def get_project(self, project_id: str | int):
         try:
             self._user_client.get_project(project_id)
-        except Exception:
+        except gitlab.exceptions.GitlabGetError as e:
+            if e.response_code == 404:
+                raise ProjectNotFound(f'Project {project_id} not found')
             raise PermissionDenied(f'User cannot access project {project_id}')
 
         try:
             return self._service_client.get_project(project_id)
-        except Exception:
+        except gitlab.exceptions.GitlabGetError as e:
+            if e.response_code == 404:
+                raise ProjectNotFound(f'Project {project_id} not found')
             raise PermissionDenied(f'AI not enabled for project {project_id}')
 
     def get_user_project(self, project_id: str | int):
         try:
             return self._user_client.get_project(project_id)
-        except Exception:
+        except gitlab.exceptions.GitlabGetError as e:
+            if e.response_code == 404:
+                raise ProjectNotFound(f'Project {project_id} not found')
             raise PermissionDenied(f'User cannot access project {project_id}')
 
     def list_projects(self, **kwargs):

@@ -1,7 +1,9 @@
 import pytest
 from unittest.mock import MagicMock, patch
 
-from gitlab_mcp.client import CompositeGitLabClient, PermissionDenied, TokenGitLabClient
+import gitlab.exceptions
+
+from gitlab_mcp.client import CompositeGitLabClient, PermissionDenied, ProjectNotFound, TokenGitLabClient
 
 
 @patch('gitlab_mcp.client.gitlab.Gitlab')
@@ -42,7 +44,9 @@ def test_composite_client_both_have_access(mock_oauth_client_class):
 @patch('gitlab_mcp.client.OAuthGitLabClient')
 def test_composite_client_user_denied(mock_oauth_client_class):
     mock_user_client = MagicMock()
-    mock_user_client.get_project.side_effect = Exception('Not found')
+    mock_user_client.get_project.side_effect = gitlab.exceptions.GitlabGetError(
+        error_message='Forbidden', response_code=403
+    )
     mock_oauth_client_class.return_value = mock_user_client
 
     mock_service_client = MagicMock()
@@ -58,13 +62,35 @@ def test_composite_client_user_denied(mock_oauth_client_class):
 
 
 @patch('gitlab_mcp.client.OAuthGitLabClient')
+def test_composite_client_user_project_not_found(mock_oauth_client_class):
+    mock_user_client = MagicMock()
+    mock_user_client.get_project.side_effect = gitlab.exceptions.GitlabGetError(
+        error_message='Not found', response_code=404
+    )
+    mock_oauth_client_class.return_value = mock_user_client
+
+    mock_service_client = MagicMock()
+
+    client = CompositeGitLabClient(
+        'user_token',
+        mock_service_client,
+        'https://gitlab.example.com',
+    )
+
+    with pytest.raises(ProjectNotFound, match='not found'):
+        client.get_project('1')
+
+
+@patch('gitlab_mcp.client.OAuthGitLabClient')
 def test_composite_client_service_denied(mock_oauth_client_class):
     mock_user_client = MagicMock()
     mock_user_client.get_project.return_value = MagicMock()
     mock_oauth_client_class.return_value = mock_user_client
 
     mock_service_client = MagicMock()
-    mock_service_client.get_project.side_effect = Exception('Not found')
+    mock_service_client.get_project.side_effect = gitlab.exceptions.GitlabGetError(
+        error_message='Forbidden', response_code=403
+    )
 
     client = CompositeGitLabClient(
         'user_token',
@@ -73,6 +99,27 @@ def test_composite_client_service_denied(mock_oauth_client_class):
     )
 
     with pytest.raises(PermissionDenied, match='AI not enabled'):
+        client.get_project('1')
+
+
+@patch('gitlab_mcp.client.OAuthGitLabClient')
+def test_composite_client_service_project_not_found(mock_oauth_client_class):
+    mock_user_client = MagicMock()
+    mock_user_client.get_project.return_value = MagicMock()
+    mock_oauth_client_class.return_value = mock_user_client
+
+    mock_service_client = MagicMock()
+    mock_service_client.get_project.side_effect = gitlab.exceptions.GitlabGetError(
+        error_message='Not found', response_code=404
+    )
+
+    client = CompositeGitLabClient(
+        'user_token',
+        mock_service_client,
+        'https://gitlab.example.com',
+    )
+
+    with pytest.raises(ProjectNotFound, match='not found'):
         client.get_project('1')
 
 
@@ -100,7 +147,9 @@ def test_composite_client_get_user_project(mock_oauth_client_class):
 @patch('gitlab_mcp.client.OAuthGitLabClient')
 def test_composite_client_get_user_project_denied(mock_oauth_client_class):
     mock_user_client = MagicMock()
-    mock_user_client.get_project.side_effect = Exception('Not found')
+    mock_user_client.get_project.side_effect = gitlab.exceptions.GitlabGetError(
+        error_message='Forbidden', response_code=403
+    )
     mock_oauth_client_class.return_value = mock_user_client
 
     mock_service_client = MagicMock()
@@ -112,6 +161,26 @@ def test_composite_client_get_user_project_denied(mock_oauth_client_class):
     )
 
     with pytest.raises(PermissionDenied, match='User cannot access'):
+        client.get_user_project('1')
+
+
+@patch('gitlab_mcp.client.OAuthGitLabClient')
+def test_composite_client_get_user_project_not_found(mock_oauth_client_class):
+    mock_user_client = MagicMock()
+    mock_user_client.get_project.side_effect = gitlab.exceptions.GitlabGetError(
+        error_message='Not found', response_code=404
+    )
+    mock_oauth_client_class.return_value = mock_user_client
+
+    mock_service_client = MagicMock()
+
+    client = CompositeGitLabClient(
+        'user_token',
+        mock_service_client,
+        'https://gitlab.example.com',
+    )
+
+    with pytest.raises(ProjectNotFound, match='not found'):
         client.get_user_project('1')
 
 
