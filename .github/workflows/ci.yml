@@ -16,6 +16,7 @@ jobs:
           fetch-depth: 0
 
       - name: Check version uniqueness
+        if: github.event_name == 'push'
         run: |
           VERSION=$(grep -Po '(?<=^version = ")[^"]*' pyproject.toml)
           if git rev-parse "v$VERSION" >/dev/null 2>&1; then
