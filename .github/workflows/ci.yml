@@ -32,7 +32,7 @@ jobs:
 
   release:
     needs: test
-    if: github.event_name == 'push' && startsWith(github.event.head_commit.message, 'Merge pull request')
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
     runs-on: ubuntu-latest
     concurrency: release
 
