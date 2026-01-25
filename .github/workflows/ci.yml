@@ -12,18 +12,6 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - name: Check version uniqueness
-        if: github.event_name == 'push'
-        run: |
-          VERSION=$(grep -Po '(?<=^version = ")[^"]*' pyproject.toml)
-          if git rev-parse "v$VERSION" >/dev/null 2>&1; then
-            echo "::error::Tag v$VERSION already exists. Please bump version in pyproject.toml"
-            exit 1
-          fi
-          echo "Version $VERSION is unique"
 
       - name: Set up Python
         uses: actions/setup-python@v5
