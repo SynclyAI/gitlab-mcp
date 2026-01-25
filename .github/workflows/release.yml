@@ -27,17 +27,13 @@ jobs:
           echo "version=$VERSION" >> $GITHUB_OUTPUT
 
       - name: Check if tag exists
-        id: check_tag
         run: |
           if git rev-parse "v${{ steps.version.outputs.version }}" >/dev/null 2>&1; then
-            echo "exists=true" >> $GITHUB_OUTPUT
-            echo "Tag v${{ steps.version.outputs.version }} already exists, skipping release"
-          else
-            echo "exists=false" >> $GITHUB_OUTPUT
+            echo "::error::Tag v${{ steps.version.outputs.version }} already exists. Please bump version in pyproject.toml"
+            exit 1
           fi
 
       - name: Create Release
-        if: steps.check_tag.outputs.exists == 'false'
         uses: softprops/action-gh-release@v2
         with:
           tag_name: v${{ steps.version.outputs.version }}
