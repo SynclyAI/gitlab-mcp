@@ -21,9 +21,3 @@ gitlab-mcp = "gitlab_mcp.server:main"
 [build-system]
 requires = ["hatchling"]
 build-backend = "hatchling.build"
-
-[tool.semantic_release]
-version_toml = ["pyproject.toml:project.version"]
-branch = "main"
-upload_to_pypi = false
-build_command = false
