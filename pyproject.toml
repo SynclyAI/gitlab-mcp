@@ -1,6 +1,6 @@
 [project]
 name = "gitlab-mcp"
-version = "0.1.0"
+version = "0.1.1"
 description = "GitLab MCP server for AI-assisted code review"
 license = "MIT"
 requires-python = ">=3.11"
