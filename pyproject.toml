@@ -3,7 +3,7 @@ name = "gitlab-mcp"
 version = "0.1.0"
 description = "GitLab MCP server for AI-assisted code review"
 license = "MIT"
-requires-python = ">=3.10"
+requires-python = ">=3.11"
 dependencies = [
     "python-gitlab==7.0.0",
     "fastmcp==2.14.1",
