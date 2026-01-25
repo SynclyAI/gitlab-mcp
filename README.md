@@ -1,5 +1,7 @@
 # GitLab MCP Server
 
+![CI](https://github.com/SynclyAI/gitlab-mcp/actions/workflows/ci.yml/badge.svg)
+
 MCP (Model Context Protocol) server for AI-assisted code review with GitLab on-premise instances.
 
 ## Features
