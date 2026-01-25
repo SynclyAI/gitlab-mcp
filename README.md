@@ -29,7 +29,7 @@ Uses OAuth with intersection-based access control:
 
 ## Prerequisites
 
-- Python 3.10+
+- Python 3.11+
 - GitLab instance with OAuth application configured
 - SSL certificate for HTTPS
 
