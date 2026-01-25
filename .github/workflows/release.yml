@@ -1,12 +1,15 @@
 name: Release
 
 on:
-  push:
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
     branches: [main]
 
 jobs:
   release:
     runs-on: ubuntu-latest
+    if: github.event.workflow_run.conclusion == 'success'
     concurrency: release
 
     permissions:
@@ -22,17 +25,15 @@ jobs:
         run: |
           VERSION=$(grep -Po '(?<=^version = ")[^"]*' pyproject.toml)
           echo "version=$VERSION" >> $GITHUB_OUTPUT
-          echo "Version: $VERSION"
 
       - name: Check if tag exists
         id: check_tag
         run: |
           if git rev-parse "v${{ steps.version.outputs.version }}" >/dev/null 2>&1; then
             echo "exists=true" >> $GITHUB_OUTPUT
-            echo "Tag v${{ steps.version.outputs.version }} already exists"
+            echo "Tag v${{ steps.version.outputs.version }} already exists, skipping release"
           else
             echo "exists=false" >> $GITHUB_OUTPUT
-            echo "Tag v${{ steps.version.outputs.version }} does not exist"
           fi
 
       - name: Create Release
