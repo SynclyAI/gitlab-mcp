@@ -240,11 +240,7 @@ def register_tools(
     ) -> FileContent:
         client = get_client(service_client, url)
         project = client.get_project(project_id)
-        params = {'file_path': file_path}
-        if ref:
-            params['ref'] = ref
-
-        file = project.files.get(**params)
+        file = project.files.get(file_path, ref or project.default_branch)
 
         return FileContent(
             file_path=file.file_path,
@@ -264,11 +260,7 @@ def register_tools(
     ) -> list[BlameEntry]:
         client = get_client(service_client, url)
         project = client.get_project(project_id)
-        params = {}
-        if ref:
-            params['ref'] = ref
-
-        blame = project.files.blame(file_path, **params)
+        blame = project.files.blame(file_path, ref or project.default_branch)
 
         return [
             BlameEntry(
