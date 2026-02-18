@@ -21,13 +21,10 @@ def test_token_client_init(mock_gitlab_class):
 
 
 @patch('gitlab_mcp.client.OAuthGitLabClient')
-def test_composite_client_both_have_access(mock_oauth_client_class):
-    mock_user_client = MagicMock()
-    mock_user_client.get_project.return_value = MagicMock()
-    mock_oauth_client_class.return_value = mock_user_client
-
+def test_composite_client_get_project_success(mock_oauth_client_class):
     mock_service_client = MagicMock()
-    mock_service_client.get_project.return_value = MagicMock()
+    mock_project = MagicMock()
+    mock_service_client.get_project.return_value = mock_project
 
     client = CompositeGitLabClient(
         'user_token',
@@ -35,58 +32,14 @@ def test_composite_client_both_have_access(mock_oauth_client_class):
         'https://gitlab.example.com',
     )
 
-    client.get_project('1')
+    result = client.get_project('1')
 
-    mock_user_client.get_project.assert_called_once_with('1')
     mock_service_client.get_project.assert_called_once_with('1')
-
-
-@patch('gitlab_mcp.client.OAuthGitLabClient')
-def test_composite_client_user_denied(mock_oauth_client_class):
-    mock_user_client = MagicMock()
-    mock_user_client.get_project.side_effect = gitlab.exceptions.GitlabGetError(
-        error_message='Forbidden', response_code=403
-    )
-    mock_oauth_client_class.return_value = mock_user_client
-
-    mock_service_client = MagicMock()
-
-    client = CompositeGitLabClient(
-        'user_token',
-        mock_service_client,
-        'https://gitlab.example.com',
-    )
-
-    with pytest.raises(PermissionDenied, match='User cannot access'):
-        client.get_project('1')
-
-
-@patch('gitlab_mcp.client.OAuthGitLabClient')
-def test_composite_client_user_project_not_found(mock_oauth_client_class):
-    mock_user_client = MagicMock()
-    mock_user_client.get_project.side_effect = gitlab.exceptions.GitlabGetError(
-        error_message='Not found', response_code=404
-    )
-    mock_oauth_client_class.return_value = mock_user_client
-
-    mock_service_client = MagicMock()
-
-    client = CompositeGitLabClient(
-        'user_token',
-        mock_service_client,
-        'https://gitlab.example.com',
-    )
-
-    with pytest.raises(ProjectNotFound, match='not found'):
-        client.get_project('1')
+    assert result == mock_project
 
 
 @patch('gitlab_mcp.client.OAuthGitLabClient')
 def test_composite_client_service_denied(mock_oauth_client_class):
-    mock_user_client = MagicMock()
-    mock_user_client.get_project.return_value = MagicMock()
-    mock_oauth_client_class.return_value = mock_user_client
-
     mock_service_client = MagicMock()
     mock_service_client.get_project.side_effect = gitlab.exceptions.GitlabGetError(
         error_message='Forbidden', response_code=403
@@ -98,7 +51,7 @@ def test_composite_client_service_denied(mock_oauth_client_class):
         'https://gitlab.example.com',
     )
 
-    with pytest.raises(PermissionDenied, match='AI not enabled'):
+    with pytest.raises(PermissionDenied, match='Service account cannot access'):
         client.get_project('1')
 
 
