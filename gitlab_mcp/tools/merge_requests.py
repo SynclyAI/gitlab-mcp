@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import asdict, dataclass
 
 from fastmcp import FastMCP
 from gitlab.v4.objects import ProjectMergeRequest
@@ -215,6 +215,18 @@ class ActionResult:
     mr_iid: int
 
 
+@dataclass
+class Position:
+    base_sha: str
+    start_sha: str
+    head_sha: str
+    position_type: str
+    new_path: str
+    old_path: str
+    new_line: int | None = None
+    old_line: int | None = None
+
+
 def register_tools(
     mcp: FastMCP,
     service_client: TokenGitLabClient,
@@ -361,14 +373,15 @@ def register_tools(
         project_id: str,
         mr_iid: int,
         body: str,
-        position: dict | None = None,
+        position: Position | None = None,
     ) -> Discussion:
         client = get_client(service_client, url)
         project = client.get_user_project(project_id)
         mr = project.mergerequests.get(mr_iid)
         params = {'body': body}
         if position:
-            params['position'] = position
+            pos_dict = asdict(position)
+            params['position'] = {k: v for k, v in pos_dict.items() if v is not None}
 
         discussion = mr.discussions.create(params)
 
