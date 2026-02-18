@@ -1,5 +1,6 @@
 from functools import wraps
 
+import gitlab.exceptions
 from fastmcp.server.dependencies import get_access_token
 from mcp.types import CallToolResult, TextContent
 
@@ -20,7 +21,7 @@ def handle_gitlab_errors(func):
     def wrapper(*args, **kwargs):
         try:
             return func(*args, **kwargs)
-        except (ProjectNotFound, PermissionDenied) as e:
+        except (ProjectNotFound, PermissionDenied, gitlab.exceptions.GitlabError) as e:
             return CallToolResult(
                 content=[TextContent(type='text', text=str(e))],
                 isError=True,
