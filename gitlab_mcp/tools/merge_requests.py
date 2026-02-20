@@ -343,7 +343,7 @@ def register_tools(
         client = get_client(service_client, url)
         project = client.get_project(project_id)
         mr = project.mergerequests.get(mr_iid)
-        pipelines = mr.pipelines()
+        pipelines = mr.pipelines.list()
 
         return [Pipeline.from_dict(p) for p in pipelines]
 

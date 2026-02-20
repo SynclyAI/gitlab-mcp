@@ -122,7 +122,7 @@ def test_get_mr_commits(mock_get_client, mock_client, mock_merge_request):
 def test_get_mr_pipelines(mock_get_client, mock_client, mock_merge_request):
     mcp = FastMCP('test')
     mock_project = MagicMock()
-    mock_merge_request.pipelines.return_value = [
+    mock_merge_request.pipelines.list.return_value = [
         {
             'id': 123,
             'sha': 'abc123',
