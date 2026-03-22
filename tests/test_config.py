@@ -220,3 +220,60 @@ def test_config_server_port():
     )
 
     assert config.server_port == 8443
+
+
+def test_config_from_env_advertised_url_invalid_scheme(tmp_path):
+    secrets_file = tmp_path / 'secrets.json'
+    secrets_file.write_text(json.dumps({
+        'oauth_client_id': 'test-client-id',
+        'oauth_client_secret': 'test-client-secret',
+        'service_token': 'test-service-token',
+    }))
+
+    with patch.dict('os.environ', {
+        'GITLAB_URL': 'https://gitlab.example.com',
+        'GITLAB_SECRETS_PATH': str(secrets_file),
+        'MCP_SERVER_BIND_URL': 'http://0.0.0.0:8080',
+        'MCP_SERVER_ADVERTISED_URL': 'ftp://mcp.example.com:8443',
+    }, clear=True):
+        with pytest.raises(ValueError, match='MCP_SERVER_ADVERTISED_URL must use http or https scheme'):
+            Config.from_env()
+
+
+def test_config_from_env_advertised_url_missing_port(tmp_path):
+    secrets_file = tmp_path / 'secrets.json'
+    secrets_file.write_text(json.dumps({
+        'oauth_client_id': 'test-client-id',
+        'oauth_client_secret': 'test-client-secret',
+        'service_token': 'test-service-token',
+    }))
+
+    with patch.dict('os.environ', {
+        'GITLAB_URL': 'https://gitlab.example.com',
+        'GITLAB_SECRETS_PATH': str(secrets_file),
+        'MCP_SERVER_BIND_URL': 'http://0.0.0.0:8080',
+        'MCP_SERVER_ADVERTISED_URL': 'https://mcp.example.com',
+    }, clear=True):
+        with pytest.raises(ValueError, match='MCP_SERVER_ADVERTISED_URL must include explicit port number'):
+            Config.from_env()
+
+
+def test_config_from_env_http_advertised_url_logs_warning(tmp_path, caplog):
+    secrets_file = tmp_path / 'secrets.json'
+    secrets_file.write_text(json.dumps({
+        'oauth_client_id': 'test-client-id',
+        'oauth_client_secret': 'test-client-secret',
+        'service_token': 'test-service-token',
+    }))
+
+    with patch.dict('os.environ', {
+        'GITLAB_URL': 'https://gitlab.example.com',
+        'GITLAB_SECRETS_PATH': str(secrets_file),
+        'MCP_SERVER_BIND_URL': 'http://0.0.0.0:8080',
+        'MCP_SERVER_ADVERTISED_URL': 'http://mcp.example.com:8080',
+    }, clear=True):
+        import logging
+        with caplog.at_level(logging.WARNING, logger='gitlab_mcp.config'):
+            Config.from_env()
+
+        assert 'MCP_SERVER_ADVERTISED_URL uses http' in caplog.text
