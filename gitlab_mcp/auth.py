@@ -20,7 +20,7 @@ def create_oauth_proxy(config: Config) -> OAuthProxy:
         upstream_client_id=config.secrets.oauth_client_id,
         upstream_client_secret=config.secrets.oauth_client_secret,
         token_verifier=token_verifier,
-        base_url=config.server_base_url,
+        base_url=config.server_advertised_url,
         redirect_path='callback',
         token_endpoint_auth_method='client_secret_post',
     )

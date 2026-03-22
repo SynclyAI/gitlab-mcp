@@ -1,8 +1,12 @@
 import json
+import logging
 import os
 from dataclasses import dataclass
 from pathlib import Path
+from typing import Optional
 from urllib.parse import urlparse
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass(frozen=True)
@@ -27,17 +31,30 @@ class Secrets:
 class Config:
     url: str
     secrets: Secrets
-    server_base_url: str
-    ssl_cert_path: Path
-    ssl_key_path: Path
+    server_bind_url: str
+    server_advertised_url: str
+    ssl_cert_path: Optional[Path]
+    ssl_key_path: Optional[Path]
 
     @property
     def server_host(self) -> str:
-        return urlparse(self.server_base_url).hostname
+        return urlparse(self.server_bind_url).hostname
 
     @property
     def server_port(self) -> int:
-        return urlparse(self.server_base_url).port
+        return urlparse(self.server_bind_url).port
+
+    @property
+    def bind_uses_tls(self) -> bool:
+        return urlparse(self.server_bind_url).scheme == 'https'
+
+    @staticmethod
+    def _validate_url(value: str, name: str) -> None:
+        parsed = urlparse(value)
+        if parsed.scheme not in ('http', 'https'):
+            raise ValueError(f'{name} must use http or https scheme')
+        if not parsed.port:
+            raise ValueError(f'{name} must include explicit port number')
 
     @staticmethod
     def from_env() -> 'Config':
@@ -51,34 +68,43 @@ class Config:
 
         secrets = Secrets.from_file(secrets_path)
 
-        server_base_url = os.environ.get('MCP_SERVER_BASE_URL')
-        if not server_base_url:
-            raise ValueError('MCP_SERVER_BASE_URL environment variable is required')
+        server_bind_url = os.environ.get('MCP_SERVER_BIND_URL')
+        if not server_bind_url:
+            raise ValueError('MCP_SERVER_BIND_URL environment variable is required')
+        Config._validate_url(server_bind_url, 'MCP_SERVER_BIND_URL')
 
-        parsed_url = urlparse(server_base_url)
-        if parsed_url.scheme != 'https':
-            raise ValueError('MCP_SERVER_BASE_URL must use https scheme')
-        if not parsed_url.port:
-            raise ValueError('MCP_SERVER_BASE_URL must include explicit port number')
+        server_advertised_url = os.environ.get('MCP_SERVER_ADVERTISED_URL')
+        if not server_advertised_url:
+            raise ValueError('MCP_SERVER_ADVERTISED_URL environment variable is required')
+        Config._validate_url(server_advertised_url, 'MCP_SERVER_ADVERTISED_URL')
 
-        ssl_cert_env = os.environ.get('MCP_SSL_CERT_PATH')
-        if not ssl_cert_env:
-            raise ValueError('MCP_SSL_CERT_PATH environment variable is required')
-        ssl_cert_path = Path(ssl_cert_env)
-        if not ssl_cert_path.exists():
-            raise ValueError(f'SSL certificate file not found: {ssl_cert_path}')
+        if urlparse(server_advertised_url).scheme == 'http':
+            logger.warning('MCP_SERVER_ADVERTISED_URL uses http - clients will connect without TLS')
 
-        ssl_key_env = os.environ.get('MCP_SSL_KEY_PATH')
-        if not ssl_key_env:
-            raise ValueError('MCP_SSL_KEY_PATH environment variable is required')
-        ssl_key_path = Path(ssl_key_env)
-        if not ssl_key_path.exists():
-            raise ValueError(f'SSL key file not found: {ssl_key_path}')
+        bind_uses_tls = urlparse(server_bind_url).scheme == 'https'
+        ssl_cert_path = None
+        ssl_key_path = None
+
+        if bind_uses_tls:
+            ssl_cert_env = os.environ.get('MCP_SSL_CERT_PATH')
+            if not ssl_cert_env:
+                raise ValueError('MCP_SSL_CERT_PATH environment variable is required when bind URL uses https')
+            ssl_cert_path = Path(ssl_cert_env)
+            if not ssl_cert_path.exists():
+                raise ValueError(f'SSL certificate file not found: {ssl_cert_path}')
+
+            ssl_key_env = os.environ.get('MCP_SSL_KEY_PATH')
+            if not ssl_key_env:
+                raise ValueError('MCP_SSL_KEY_PATH environment variable is required when bind URL uses https')
+            ssl_key_path = Path(ssl_key_env)
+            if not ssl_key_path.exists():
+                raise ValueError(f'SSL key file not found: {ssl_key_path}')
 
         return Config(
             url=url,
             secrets=secrets,
-            server_base_url=server_base_url,
+            server_bind_url=server_bind_url,
+            server_advertised_url=server_advertised_url,
             ssl_cert_path=ssl_cert_path,
             ssl_key_path=ssl_key_path,
         )
