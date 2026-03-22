@@ -60,9 +60,10 @@ Create a JSON file with credentials:
 |----------|----------|-------------|
 | `GITLAB_URL` | yes | GitLab instance URL |
 | `GITLAB_SECRETS_PATH` | yes | Path to secrets JSON file |
-| `MCP_SERVER_BASE_URL` | yes | Server URL with https and port (e.g., `https://localhost:8443`) |
-| `MCP_SSL_CERT_PATH` | yes | Path to SSL certificate |
-| `MCP_SSL_KEY_PATH` | yes | Path to SSL private key |
+| `MCP_SERVER_BIND_URL` | yes | Bind URL with protocol and port (e.g., `https://0.0.0.0:8443` or `http://0.0.0.0:8080`) |
+| `MCP_SERVER_ADVERTISED_URL` | yes | Client-facing URL (e.g., `https://mcp.example.com:8443`) |
+| `MCP_SSL_CERT_PATH` | when bind uses https | Path to SSL certificate |
+| `MCP_SSL_KEY_PATH` | when bind uses https | Path to SSL private key |
 | `SSL_CERT_FILE` | no | CA certificate for GitLab (self-signed certs) |
 
 ### 4. Install

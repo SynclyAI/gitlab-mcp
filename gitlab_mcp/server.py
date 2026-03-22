@@ -54,15 +54,16 @@ def get_config() -> Config:
 def main():
     merge_requests.register_tools(mcp, service_client, config.url)
     repository.register_tools(mcp, service_client, config.url)
+    uvicorn_cfg = {'log_config': UVICORN_LOG_CONFIG}
+    if config.bind_uses_tls:
+        uvicorn_cfg['ssl_certfile'] = str(config.ssl_cert_path)
+        uvicorn_cfg['ssl_keyfile'] = str(config.ssl_key_path)
+
     mcp.run(
         transport='http',
         host=config.server_host,
         port=config.server_port,
-        uvicorn_config={
-            'ssl_certfile': str(config.ssl_cert_path),
-            'ssl_keyfile': str(config.ssl_key_path),
-            'log_config': UVICORN_LOG_CONFIG,
-        },
+        uvicorn_config=uvicorn_cfg,
     )
 
 
