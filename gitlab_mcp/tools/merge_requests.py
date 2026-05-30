@@ -428,6 +428,8 @@ def register_tools(
         }
         if description:
             params['description'] = description
+        if project.remove_source_branch_after_merge:
+            params['remove_source_branch'] = True
 
         mr = project.mergerequests.create(params)
 
