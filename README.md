@@ -78,6 +78,18 @@ pip install .
 gitlab-mcp
 ```
 
+## Docker
+
+The image installs a pre-built wheel and `dist/` is the build context:
+
+```bash
+make image
+```
+
+Equivalent to building the wheel into an emptied `dist/` and running
+`docker build -f Dockerfile -t gitlab-mcp:<version> dist/`. The wheel is built
+with `venv/bin/python`, so the `dev` extra must be installed.
+
 ## Development
 
 ```bash
