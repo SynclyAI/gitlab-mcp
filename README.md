@@ -11,9 +11,8 @@ MCP (Model Context Protocol) server for AI-assisted code review with GitLab on-p
 - List, get, create, update merge requests
 - Set MR draft status
 - Get MR changes, commits, pipelines
-- Get discussions, add comments and line comments
-- Reply to and resolve discussions
-- Delete own comments
+- Get notes and discussions, add notes, start discussions on the MR or on a diff line
+- Reply to, resolve, edit and delete comments
 - Approve, unapprove, merge MRs
 
 ### Repository Tools

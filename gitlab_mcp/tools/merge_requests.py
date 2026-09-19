@@ -11,6 +11,8 @@ from gitlab_mcp.tools.common import get_client
 
 DRAFT_PREFIX = 'Draft: '
 TEXT_POSITION = 'text'
+SIDE_NEW = 'new'
+SIDE_OLD = 'old'
 DRAFT_PREFIX_PATTERN = re.compile(r'^\s*(\[draft\]|\(draft\)|draft:|\[wip\]|wip:)\s*', re.IGNORECASE)
 
 
@@ -222,6 +224,10 @@ class Note:
             position=n.get('position'),
         )
 
+    @staticmethod
+    def from_gitlab(note) -> Note:
+        return Note.from_dict(note.attributes)
+
 
 @dataclass
 class Discussion:
@@ -372,39 +378,56 @@ def register_tools(
         return [Discussion.from_gitlab(d) for d in discussions]
 
     @mcp.tool
-    def add_merge_request_line_comment(
+    def get_merge_request_notes(
+        project_id: str,
+        mr_iid: int,
+        sort: str | None = None,
+        order_by: str | None = None,
+    ) -> list[Note]:
+        client = get_client(service_client, url)
+        project = client.get_project(project_id)
+        mr = project.mergerequests.get(mr_iid)
+        params = {'iterator': True}
+        if sort:
+            params['sort'] = sort
+        if order_by:
+            params['order_by'] = order_by
+
+        notes = mr.notes.list(**params)
+
+        return [Note.from_gitlab(n) for n in notes]
+
+    @mcp.tool
+    def add_merge_request_note(
         project_id: str,
         mr_iid: int,
         body: str,
-        file: str,
-        line: int,
-    ) -> Discussion:
+    ) -> Note:
         client = get_client(service_client, url)
         project = client.get_user_project(project_id)
         mr = project.mergerequests.get(mr_iid)
-        changes = mr.changes()
-        change = next((c for c in changes['changes'] if c['new_path'] == file), None)
-        if change is None:
-            raise ValueError(f'File {file} is not changed in merge request {mr_iid}')
+        note = mr.notes.create({'body': body})
 
-        refs = changes['diff_refs']
-        discussion = mr.discussions.create({
-            'body': body,
-            'position': {
-                'base_sha': refs['base_sha'],
-                'start_sha': refs['start_sha'],
-                'head_sha': refs['head_sha'],
-                'position_type': TEXT_POSITION,
-                'new_path': file,
-                'old_path': change['old_path'],
-                'new_line': line,
-            },
-        })
-
-        return Discussion.from_gitlab(discussion)
+        return Note.from_gitlab(note)
 
     @mcp.tool
-    def delete_merge_request_comment(
+    def update_merge_request_note(
+        project_id: str,
+        mr_iid: int,
+        note_id: int,
+        body: str,
+    ) -> Note:
+        client = get_client(service_client, url)
+        project = client.get_user_project(project_id)
+        mr = project.mergerequests.get(mr_iid)
+        note = mr.notes.get(note_id)
+        note.body = body
+        note.save()
+
+        return Note.from_gitlab(note)
+
+    @mcp.tool
+    def delete_merge_request_note(
         project_id: str,
         mr_iid: int,
         note_id: int,
@@ -417,7 +440,7 @@ def register_tools(
         return ActionResult(status='deleted', mr_iid=mr_iid)
 
     @mcp.tool
-    def add_merge_request_comment(
+    def create_merge_request_discussion(
         project_id: str,
         mr_iid: int,
         body: str,
@@ -428,6 +451,39 @@ def register_tools(
         discussion = mr.discussions.create({'body': body})
 
         return Discussion.from_gitlab(discussion)
+
+    @mcp.tool
+    def create_merge_request_line_discussion(
+        project_id: str,
+        mr_iid: int,
+        body: str,
+        file: str,
+        line: int,
+        side: str = SIDE_NEW,
+    ) -> Discussion:
+        if side not in (SIDE_NEW, SIDE_OLD):
+            raise ValueError(f'Side must be {SIDE_NEW} or {SIDE_OLD}, got {side}')
+
+        client = get_client(service_client, url)
+        project = client.get_user_project(project_id)
+        mr = project.mergerequests.get(mr_iid)
+        changes = mr.changes()
+        change = next((c for c in changes['changes'] if file in (c['new_path'], c['old_path'])), None)
+        if change is None:
+            raise ValueError(f'File {file} is not changed in merge request {mr_iid}')
+
+        refs = changes['diff_refs']
+        position = {
+            'base_sha': refs['base_sha'],
+            'start_sha': refs['start_sha'],
+            'head_sha': refs['head_sha'],
+            'position_type': TEXT_POSITION,
+            'new_path': change['new_path'],
+            'old_path': change['old_path'],
+        }
+        position['new_line' if side == SIDE_NEW else 'old_line'] = line
+
+        return Discussion.from_gitlab(mr.discussions.create({'body': body, 'position': position}))
 
     @mcp.tool
     def reply_to_merge_request_discussion(
@@ -459,6 +515,39 @@ def register_tools(
         discussion.save()
 
         return Discussion.from_gitlab(discussion)
+
+    @mcp.tool
+    def update_merge_request_discussion_note(
+        project_id: str,
+        mr_iid: int,
+        discussion_id: str,
+        note_id: int,
+        body: str,
+    ) -> Discussion:
+        client = get_client(service_client, url)
+        project = client.get_user_project(project_id)
+        mr = project.mergerequests.get(mr_iid)
+        discussion = mr.discussions.get(discussion_id)
+        note = discussion.notes.get(note_id)
+        note.body = body
+        note.save()
+
+        return Discussion.from_gitlab(mr.discussions.get(discussion_id))
+
+    @mcp.tool
+    def delete_merge_request_discussion_note(
+        project_id: str,
+        mr_iid: int,
+        discussion_id: str,
+        note_id: int,
+    ) -> ActionResult:
+        client = get_client(service_client, url)
+        project = client.get_user_project(project_id)
+        mr = project.mergerequests.get(mr_iid)
+        discussion = mr.discussions.get(discussion_id)
+        discussion.notes.delete(note_id)
+
+        return ActionResult(status='deleted', mr_iid=mr_iid)
 
     @mcp.tool
     def create_merge_request(
