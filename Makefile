@@ -1,4 +1,4 @@
-PYTHON ?= python
+PYTHON := venv/bin/python
 VERSION := $(shell grep -Po '(?<=^version = ")[^"]*' pyproject.toml)
 
 .PHONY: wheel image

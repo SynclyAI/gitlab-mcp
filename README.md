@@ -87,8 +87,8 @@ make image
 ```
 
 Equivalent to building the wheel into an emptied `dist/` and running
-`docker build -f Dockerfile -t gitlab-mcp:<version> dist/`. Needs the `dev`
-extra for `build`, or `make image PYTHON=venv/bin/python` to use the venv.
+`docker build -f Dockerfile -t gitlab-mcp:<version> dist/`. The wheel is built
+with `venv/bin/python`, so the `dev` extra must be installed.
 
 ## Development
 
