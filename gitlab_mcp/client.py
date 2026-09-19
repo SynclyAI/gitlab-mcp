@@ -12,6 +12,10 @@ class ProjectNotFound(Exception):
     pass
 
 
+class UserNotFound(Exception):
+    pass
+
+
 class GitLabClient(ABC):
     @abstractmethod
     def get_project(self, project_id: str | int):
@@ -42,6 +46,9 @@ class TokenGitLabClient(GitLabClient):
 
     def list_merge_requests(self, **kwargs):
         return self._gl.mergerequests.list(**kwargs)
+
+    def find_users(self, username: str):
+        return self._gl.users.list(username=username)
 
     def get_current_user(self):
         return self._gl.user
@@ -94,6 +101,13 @@ class CompositeGitLabClient(GitLabClient):
             if e.response_code == 404:
                 raise ProjectNotFound(f'Project {project_id} not found')
             raise PermissionDenied(f'User cannot access project {project_id}')
+
+    def get_user_id(self, username: str) -> int:
+        users = self._service_client.find_users(username)
+        if not users:
+            raise UserNotFound(f'User {username} not found')
+
+        return users[0].id
 
     def list_projects(self, **kwargs):
         return self._service_client.list_projects(**kwargs)

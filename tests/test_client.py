@@ -3,7 +3,13 @@ from unittest.mock import MagicMock, patch
 
 import gitlab.exceptions
 
-from gitlab_mcp.client import CompositeGitLabClient, PermissionDenied, ProjectNotFound, TokenGitLabClient
+from gitlab_mcp.client import (
+    CompositeGitLabClient,
+    PermissionDenied,
+    ProjectNotFound,
+    TokenGitLabClient,
+    UserNotFound,
+)
 
 
 @patch('gitlab_mcp.client.gitlab.Gitlab')
@@ -152,3 +158,27 @@ def test_composite_client_list_projects(mock_oauth_client_class):
 
     mock_service_client.list_projects.assert_called_once()
     assert len(result) == 1
+
+
+@patch('gitlab_mcp.client.OAuthGitLabClient')
+def test_composite_client_get_user_id(mock_oauth_client_class):
+    service_client = MagicMock()
+    user = MagicMock()
+    user.id = 42
+    service_client.find_users.return_value = [user]
+
+    client = CompositeGitLabClient('token', service_client, 'https://gitlab.example.com')
+
+    assert client.get_user_id('testuser') == 42
+    service_client.find_users.assert_called_once_with('testuser')
+
+
+@patch('gitlab_mcp.client.OAuthGitLabClient')
+def test_composite_client_get_user_id_not_found(mock_oauth_client_class):
+    service_client = MagicMock()
+    service_client.find_users.return_value = []
+
+    client = CompositeGitLabClient('token', service_client, 'https://gitlab.example.com')
+
+    with pytest.raises(UserNotFound):
+        client.get_user_id('ghost')

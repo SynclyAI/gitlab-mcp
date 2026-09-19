@@ -436,8 +436,12 @@ def register_tools(
         title: str | None = None,
         description: str | None = None,
         labels: list[str] | None = None,
-        assignee_ids: list[int] | None = None,
+        assignees: list[str] | None = None,
     ) -> MergeRequestDetails:
+        if title is None and description is None and labels is None and assignees is None:
+            raise ValueError('No fields to update: provide title, description, labels or assignees')
+
+        client = get_client(service_client, url)
         params = {}
         if title is not None:
             params['title'] = title
@@ -445,12 +449,9 @@ def register_tools(
             params['description'] = description
         if labels is not None:
             params['labels'] = labels
-        if assignee_ids is not None:
-            params['assignee_ids'] = assignee_ids
-        if not params:
-            raise ValueError('No fields to update: provide title, description, labels or assignee_ids')
+        if assignees is not None:
+            params['assignee_ids'] = [client.get_user_id(a) for a in assignees]
 
-        client = get_client(service_client, url)
         project = client.get_user_project(project_id)
         project.mergerequests.update(mr_iid, params)
         mr = project.mergerequests.get(mr_iid)
