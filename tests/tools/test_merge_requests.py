@@ -576,9 +576,9 @@ def test_get_merge_request_notes(mock_get_client, mock_client, mock_merge_reques
     merge_requests.register_tools(mcp, mock_client, GITLAB_URL)
 
     tool = next(t for t in mcp._tool_manager._tools.values() if t.name == 'get_merge_request_notes')
-    result = tool.fn(project_id='1', mr_iid=1, sort='asc')
+    result = tool.fn(project_id='1', mr_iid=1, sort='asc', order_by='updated_at')
 
-    mock_merge_request.notes.list.assert_called_once_with(iterator=True, sort='asc')
+    mock_merge_request.notes.list.assert_called_once_with(iterator=True, sort='asc', order_by='updated_at')
     assert [n.body for n in result] == ['First', 'Second']
 
 
