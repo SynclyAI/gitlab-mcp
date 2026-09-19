@@ -78,6 +78,18 @@ pip install .
 gitlab-mcp
 ```
 
+## Docker
+
+The image installs a pre-built wheel, so build it first:
+
+```bash
+rm -rf dist
+python -m build --wheel
+docker build -t gitlab-mcp:$(grep -Po '(?<=^version = ")[^"]*' pyproject.toml) .
+```
+
+`rm -rf dist` is required - every wheel left in `dist/` is copied into the image.
+
 ## Development
 
 ```bash
