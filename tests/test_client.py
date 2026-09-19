@@ -5,6 +5,7 @@ import gitlab.exceptions
 
 from gitlab_mcp.client import (
     CompositeGitLabClient,
+    OAuthGitLabClient,
     PermissionDenied,
     ProjectNotFound,
     TokenGitLabClient,
@@ -182,3 +183,30 @@ def test_composite_client_get_user_id_not_found(mock_oauth_client_class):
 
     with pytest.raises(UserNotFound):
         client.get_user_id('ghost')
+
+
+@patch('gitlab_mcp.client.gitlab.Gitlab')
+def test_oauth_client_init(mock_gitlab_class):
+    OAuthGitLabClient('https://gitlab.example.com', 'oauth-token')
+
+    mock_gitlab_class.assert_called_once_with(
+        url='https://gitlab.example.com',
+        oauth_token='oauth-token',
+        ssl_verify=True,
+    )
+
+
+@patch.dict('os.environ', {'SSL_CERT_FILE': '/etc/ssl/ca.crt'})
+@patch('gitlab_mcp.client.gitlab.Gitlab')
+def test_oauth_client_verifies_against_configured_ca(mock_gitlab_class):
+    OAuthGitLabClient('https://gitlab.example.com', 'oauth-token')
+
+    assert mock_gitlab_class.call_args.kwargs['ssl_verify'] == '/etc/ssl/ca.crt'
+
+
+@patch.dict('os.environ', {'SSL_CERT_FILE': '/etc/ssl/ca.crt'})
+@patch('gitlab_mcp.client.gitlab.Gitlab')
+def test_token_client_verifies_against_configured_ca(mock_gitlab_class):
+    TokenGitLabClient('https://gitlab.example.com', 'test-token')
+
+    assert mock_gitlab_class.call_args.kwargs['ssl_verify'] == '/etc/ssl/ca.crt'

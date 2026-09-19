@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import re
-from dataclasses import asdict, dataclass
+from dataclasses import dataclass
 
 from fastmcp import FastMCP
 from gitlab.v4.objects import ProjectMergeRequest
@@ -10,6 +10,9 @@ from gitlab_mcp.client import TokenGitLabClient
 from gitlab_mcp.tools.common import get_client
 
 DRAFT_PREFIX = 'Draft: '
+TEXT_POSITION = 'text'
+SIDE_NEW = 'new'
+SIDE_OLD = 'old'
 DRAFT_PREFIX_PATTERN = re.compile(r'^\s*(\[draft\]|\(draft\)|draft:|\[wip\]|wip:)\s*', re.IGNORECASE)
 
 
@@ -127,8 +130,24 @@ class MergeRequestChange:
 
 
 @dataclass
+class DiffRefs:
+    base_sha: str
+    start_sha: str
+    head_sha: str
+
+    @staticmethod
+    def from_dict(refs: dict) -> DiffRefs:
+        return DiffRefs(
+            base_sha=refs['base_sha'],
+            start_sha=refs['start_sha'],
+            head_sha=refs['head_sha'],
+        )
+
+
+@dataclass
 class MergeRequestChanges:
     changes: list[MergeRequestChange]
+    diff_refs: DiffRefs
 
 
 @dataclass
@@ -205,6 +224,10 @@ class Note:
             position=n.get('position'),
         )
 
+    @staticmethod
+    def from_gitlab(note) -> Note:
+        return Note.from_dict(note.attributes)
+
 
 @dataclass
 class Discussion:
@@ -212,23 +235,19 @@ class Discussion:
     individual_note: bool
     notes: list[Note]
 
+    @staticmethod
+    def from_gitlab(discussion) -> Discussion:
+        return Discussion(
+            id=discussion.id,
+            individual_note=discussion.attributes.get('individual_note', False),
+            notes=[Note.from_dict(n) for n in discussion.attributes['notes']],
+        )
+
 
 @dataclass
 class ActionResult:
     status: str
     mr_iid: int
-
-
-@dataclass
-class Position:
-    base_sha: str
-    start_sha: str
-    head_sha: str
-    position_type: str
-    new_path: str
-    old_path: str
-    new_line: int | None = None
-    old_line: int | None = None
 
 
 def register_tools(
@@ -318,11 +337,12 @@ def register_tools(
         changes = mr.changes()
 
         return MergeRequestChanges(
-            changes=[MergeRequestChange.from_dict(c) for c in changes['changes']]
+            changes=[MergeRequestChange.from_dict(c) for c in changes['changes']],
+            diff_refs=DiffRefs.from_dict(changes['diff_refs']),
         )
 
     @mcp.tool
-    def get_mr_commits(
+    def get_merge_request_commits(
         project_id: str,
         mr_iid: int,
     ) -> list[Commit]:
@@ -334,7 +354,7 @@ def register_tools(
         return [Commit.from_gitlab(c) for c in commits]
 
     @mcp.tool
-    def get_mr_pipelines(
+    def get_merge_request_pipelines(
         project_id: str,
         mr_iid: int,
     ) -> list[Pipeline]:
@@ -346,7 +366,7 @@ def register_tools(
         return [Pipeline.from_dict(p) for p in pipelines]
 
     @mcp.tool
-    def get_mr_discussions(
+    def get_merge_request_discussions(
         project_id: str,
         mr_iid: int,
     ) -> list[Discussion]:
@@ -355,40 +375,30 @@ def register_tools(
         mr = project.mergerequests.get(mr_iid)
         discussions = mr.discussions.list(iterator=True)
 
-        return [
-            Discussion(
-                id=d.id,
-                individual_note=d.individual_note,
-                notes=[Note.from_dict(n) for n in d.attributes['notes']],
-            )
-            for d in discussions
-        ]
+        return [Discussion.from_gitlab(d) for d in discussions]
 
     @mcp.tool
-    def add_mr_discussion(
+    def get_merge_request_notes(
         project_id: str,
         mr_iid: int,
-        body: str,
-        position: Position | None = None,
-    ) -> Discussion:
+        sort: str | None = None,
+        order_by: str | None = None,
+    ) -> list[Note]:
         client = get_client(service_client, url)
-        project = client.get_user_project(project_id)
+        project = client.get_project(project_id)
         mr = project.mergerequests.get(mr_iid)
-        params = {'body': body}
-        if position:
-            pos_dict = asdict(position)
-            params['position'] = {k: v for k, v in pos_dict.items() if v is not None}
+        params = {'iterator': True}
+        if sort:
+            params['sort'] = sort
+        if order_by:
+            params['order_by'] = order_by
 
-        discussion = mr.discussions.create(params)
+        notes = mr.notes.list(**params)
 
-        return Discussion(
-            id=discussion.id,
-            individual_note=False,
-            notes=[Note.from_dict(n) for n in discussion.attributes['notes']],
-        )
+        return [Note.from_gitlab(n) for n in notes]
 
     @mcp.tool
-    def add_merge_request_comment(
+    def add_merge_request_note(
         project_id: str,
         mr_iid: int,
         body: str,
@@ -398,12 +408,146 @@ def register_tools(
         mr = project.mergerequests.get(mr_iid)
         note = mr.notes.create({'body': body})
 
-        return Note(
-            id=note.id,
-            body=note.body,
-            author=note.author['username'],
-            created_at=note.created_at,
-        )
+        return Note.from_gitlab(note)
+
+    @mcp.tool
+    def update_merge_request_note(
+        project_id: str,
+        mr_iid: int,
+        note_id: int,
+        body: str,
+    ) -> Note:
+        client = get_client(service_client, url)
+        project = client.get_user_project(project_id)
+        mr = project.mergerequests.get(mr_iid)
+        note = mr.notes.get(note_id)
+        note.body = body
+        note.save()
+
+        return Note.from_gitlab(note)
+
+    @mcp.tool
+    def delete_merge_request_note(
+        project_id: str,
+        mr_iid: int,
+        note_id: int,
+    ) -> ActionResult:
+        client = get_client(service_client, url)
+        project = client.get_user_project(project_id)
+        mr = project.mergerequests.get(mr_iid)
+        mr.notes.delete(note_id)
+
+        return ActionResult(status='deleted', mr_iid=mr_iid)
+
+    @mcp.tool
+    def create_merge_request_discussion(
+        project_id: str,
+        mr_iid: int,
+        body: str,
+    ) -> Discussion:
+        client = get_client(service_client, url)
+        project = client.get_user_project(project_id)
+        mr = project.mergerequests.get(mr_iid)
+        discussion = mr.discussions.create({'body': body})
+
+        return Discussion.from_gitlab(discussion)
+
+    @mcp.tool
+    def create_merge_request_line_discussion(
+        project_id: str,
+        mr_iid: int,
+        body: str,
+        file: str,
+        line: int,
+        side: str = SIDE_NEW,
+    ) -> Discussion:
+        if side not in (SIDE_NEW, SIDE_OLD):
+            raise ValueError(f'Side must be {SIDE_NEW} or {SIDE_OLD}, got {side}')
+
+        client = get_client(service_client, url)
+        project = client.get_user_project(project_id)
+        mr = project.mergerequests.get(mr_iid)
+        changes = mr.changes()
+        change = next((c for c in changes['changes'] if file in (c['new_path'], c['old_path'])), None)
+        if change is None:
+            raise ValueError(f'File {file} is not changed in merge request {mr_iid}')
+
+        refs = changes['diff_refs']
+        position = {
+            'base_sha': refs['base_sha'],
+            'start_sha': refs['start_sha'],
+            'head_sha': refs['head_sha'],
+            'position_type': TEXT_POSITION,
+            'new_path': change['new_path'],
+            'old_path': change['old_path'],
+        }
+        position['new_line' if side == SIDE_NEW else 'old_line'] = line
+
+        return Discussion.from_gitlab(mr.discussions.create({'body': body, 'position': position}))
+
+    @mcp.tool
+    def reply_to_merge_request_discussion(
+        project_id: str,
+        mr_iid: int,
+        discussion_id: str,
+        body: str,
+    ) -> Discussion:
+        client = get_client(service_client, url)
+        project = client.get_user_project(project_id)
+        mr = project.mergerequests.get(mr_iid)
+        discussion = mr.discussions.get(discussion_id)
+        discussion.notes.create({'body': body})
+
+        return Discussion.from_gitlab(mr.discussions.get(discussion_id))
+
+    @mcp.tool
+    def resolve_merge_request_discussion(
+        project_id: str,
+        mr_iid: int,
+        discussion_id: str,
+        resolved: bool = True,
+    ) -> Discussion:
+        client = get_client(service_client, url)
+        project = client.get_user_project(project_id)
+        mr = project.mergerequests.get(mr_iid)
+        discussion = mr.discussions.get(discussion_id)
+        discussion.resolved = resolved
+        discussion.save()
+
+        return Discussion.from_gitlab(discussion)
+
+    @mcp.tool
+    def update_merge_request_discussion_note(
+        project_id: str,
+        mr_iid: int,
+        discussion_id: str,
+        note_id: int,
+        body: str,
+    ) -> Discussion:
+        client = get_client(service_client, url)
+        project = client.get_user_project(project_id)
+        mr = project.mergerequests.get(mr_iid)
+        discussion = mr.discussions.get(discussion_id)
+        note = discussion.notes.get(note_id)
+        note.body = body
+        note.save()
+
+        return Discussion.from_gitlab(mr.discussions.get(discussion_id))
+
+    @mcp.tool
+    def delete_merge_request_discussion_note(
+        project_id: str,
+        mr_iid: int,
+        discussion_id: str,
+        note_id: int,
+    ) -> ActionResult:
+        client = get_client(service_client, url)
+        project = client.get_user_project(project_id)
+        mr = project.mergerequests.get(mr_iid)
+        discussion = mr.discussions.get(discussion_id)
+        discussion.notes.delete(note_id)
+
+        return ActionResult(status='deleted', mr_iid=mr_iid)
 
     @mcp.tool
     def create_merge_request(
