@@ -9,6 +9,25 @@ from gitlab_mcp.tools import merge_requests
 GITLAB_URL = 'https://gitlab.example.com'
 
 
+def discussion_with_note(body, discussion_id='disc123', resolved=False):
+    discussion = MagicMock()
+    discussion.id = discussion_id
+    discussion.attributes = {
+        'individual_note': False,
+        'notes': [
+            {
+                'id': 1,
+                'body': body,
+                'author': {'username': 'testuser'},
+                'created_at': '2024-01-01T00:00:00Z',
+                'resolved': resolved,
+            }
+        ],
+    }
+
+    return discussion
+
+
 @patch('gitlab_mcp.tools.merge_requests.get_client')
 def test_search_merge_requests(mock_get_client, mock_client, mock_merge_request):
     mcp = FastMCP('test')
@@ -192,12 +211,7 @@ def test_get_merge_request_discussions(mock_get_client, mock_client, mock_merge_
 def test_add_merge_request_comment(mock_get_client, mock_client, mock_merge_request):
     mcp = FastMCP('test')
     mock_project = MagicMock()
-    mock_note = MagicMock()
-    mock_note.id = 1
-    mock_note.body = 'Test comment'
-    mock_note.author = {'username': 'testuser'}
-    mock_note.created_at = '2024-01-01T00:00:00Z'
-    mock_merge_request.notes.create.return_value = mock_note
+    mock_merge_request.discussions.create.return_value = discussion_with_note('Test comment')
     mock_project.mergerequests.get.return_value = mock_merge_request
     mock_get_client.return_value.get_user_project.return_value = mock_project
 
@@ -206,8 +220,9 @@ def test_add_merge_request_comment(mock_get_client, mock_client, mock_merge_requ
     tool = next(t for t in mcp._tool_manager._tools.values() if t.name == 'add_merge_request_comment')
     result = tool.fn(project_id='1', mr_iid=1, body='Test comment')
 
-    assert result.id == 1
-    assert result.body == 'Test comment'
+    mock_merge_request.discussions.create.assert_called_once_with({'body': 'Test comment'})
+    assert result.individual_note is False
+    assert result.notes[0].body == 'Test comment'
 
 
 @patch('gitlab_mcp.tools.merge_requests.get_client')
@@ -593,3 +608,59 @@ def test_delete_merge_request_comment(mock_get_client, mock_client, mock_merge_r
     mock_merge_request.notes.delete.assert_called_once_with(254230)
     assert result.status == 'deleted'
     assert result.mr_iid == 1
+
+
+@patch('gitlab_mcp.tools.merge_requests.get_client')
+def test_reply_to_merge_request_discussion(mock_get_client, mock_client, mock_merge_request):
+    mcp = FastMCP('test')
+    mock_project = MagicMock()
+    discussion = discussion_with_note('Reply body')
+    mock_merge_request.discussions.get.return_value = discussion
+    mock_project.mergerequests.get.return_value = mock_merge_request
+    mock_get_client.return_value.get_user_project.return_value = mock_project
+
+    merge_requests.register_tools(mcp, mock_client, GITLAB_URL)
+
+    tool = next(t for t in mcp._tool_manager._tools.values() if t.name == 'reply_to_merge_request_discussion')
+    result = tool.fn(project_id='1', mr_iid=1, discussion_id='disc123', body='Reply body')
+
+    mock_merge_request.discussions.get.assert_called_with('disc123')
+    discussion.notes.create.assert_called_once_with({'body': 'Reply body'})
+    assert result.id == 'disc123'
+
+
+@patch('gitlab_mcp.tools.merge_requests.get_client')
+def test_resolve_merge_request_discussion(mock_get_client, mock_client, mock_merge_request):
+    mcp = FastMCP('test')
+    mock_project = MagicMock()
+    discussion = discussion_with_note('Line comment', resolved=True)
+    mock_merge_request.discussions.get.return_value = discussion
+    mock_project.mergerequests.get.return_value = mock_merge_request
+    mock_get_client.return_value.get_user_project.return_value = mock_project
+
+    merge_requests.register_tools(mcp, mock_client, GITLAB_URL)
+
+    tool = next(t for t in mcp._tool_manager._tools.values() if t.name == 'resolve_merge_request_discussion')
+    result = tool.fn(project_id='1', mr_iid=1, discussion_id='disc123')
+
+    assert discussion.resolved is True
+    discussion.save.assert_called_once()
+    assert result.notes[0].resolved is True
+
+
+@patch('gitlab_mcp.tools.merge_requests.get_client')
+def test_unresolve_merge_request_discussion(mock_get_client, mock_client, mock_merge_request):
+    mcp = FastMCP('test')
+    mock_project = MagicMock()
+    discussion = discussion_with_note('Line comment')
+    mock_merge_request.discussions.get.return_value = discussion
+    mock_project.mergerequests.get.return_value = mock_merge_request
+    mock_get_client.return_value.get_user_project.return_value = mock_project
+
+    merge_requests.register_tools(mcp, mock_client, GITLAB_URL)
+
+    tool = next(t for t in mcp._tool_manager._tools.values() if t.name == 'resolve_merge_request_discussion')
+    tool.fn(project_id='1', mr_iid=1, discussion_id='disc123', resolved=False)
+
+    assert discussion.resolved is False
+    discussion.save.assert_called_once()
