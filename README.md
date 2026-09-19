@@ -8,7 +8,8 @@ MCP (Model Context Protocol) server for AI-assisted code review with GitLab on-p
 ## Features
 
 ### Merge Request Tools
-- List, get, create merge requests
+- List, get, create, update merge requests
+- Set MR draft status
 - Get MR changes, commits, pipelines
 - Get and add discussions/comments
 - Approve, unapprove, merge MRs

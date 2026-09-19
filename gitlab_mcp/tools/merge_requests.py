@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import re
 from dataclasses import asdict, dataclass
 
 from fastmcp import FastMCP
@@ -7,6 +8,9 @@ from gitlab.v4.objects import ProjectMergeRequest
 
 from gitlab_mcp.client import TokenGitLabClient
 from gitlab_mcp.tools.common import get_client
+
+DRAFT_PREFIX = 'Draft: '
+DRAFT_PREFIX_PATTERN = re.compile(r'^\s*(\[draft\]|\(draft\)|draft:|\[wip\]|wip:)\s*', re.IGNORECASE)
 
 
 @dataclass
@@ -424,6 +428,52 @@ def register_tools(
         mr = project.mergerequests.create(params)
 
         return MergeRequestDetails.from_gitlab(mr)
+
+    @mcp.tool
+    def update_merge_request(
+        project_id: str,
+        mr_iid: int,
+        title: str | None = None,
+        description: str | None = None,
+        labels: list[str] | None = None,
+        assignees: list[str] | None = None,
+    ) -> MergeRequestDetails:
+        if title is None and description is None and labels is None and assignees is None:
+            raise ValueError('No fields to update: provide title, description, labels or assignees')
+
+        client = get_client(service_client, url)
+        params = {}
+        if title is not None:
+            params['title'] = title
+        if description is not None:
+            params['description'] = description
+        if labels is not None:
+            params['labels'] = labels
+        if assignees is not None:
+            params['assignee_ids'] = [client.get_user_id(a) for a in assignees]
+
+        project = client.get_user_project(project_id)
+        project.mergerequests.update(mr_iid, params)
+        mr = project.mergerequests.get(mr_iid)
+
+        return MergeRequestDetails.from_gitlab(mr)
+
+    @mcp.tool
+    def set_merge_request_draft(
+        project_id: str,
+        mr_iid: int,
+        draft: bool,
+    ) -> ActionResult:
+        client = get_client(service_client, url)
+        project = client.get_user_project(project_id)
+        mr = project.mergerequests.get(mr_iid)
+        title = DRAFT_PREFIX_PATTERN.sub('', mr.title)
+        if draft:
+            title = DRAFT_PREFIX + title
+        if title != mr.title:
+            project.mergerequests.update(mr_iid, {'title': title})
+
+        return ActionResult(status='draft' if draft else 'ready', mr_iid=mr_iid)
 
     @mcp.tool
     def approve_merge_request(

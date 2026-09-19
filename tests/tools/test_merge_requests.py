@@ -1,7 +1,9 @@
 from unittest.mock import MagicMock, patch
 
+import pytest
 from fastmcp import FastMCP
 
+from gitlab_mcp.client import UserNotFound
 from gitlab_mcp.tools import merge_requests
 
 GITLAB_URL = 'https://gitlab.example.com'
@@ -331,3 +333,184 @@ def test_merge_merge_request(mock_get_client, mock_client, mock_merge_request):
     mock_merge_request.merge.assert_called_once()
     assert result.status == 'merged'
     assert result.mr_iid == 1
+
+
+@patch('gitlab_mcp.tools.merge_requests.get_client')
+def test_update_merge_request(mock_get_client, mock_client, mock_merge_request):
+    mcp = FastMCP('test')
+    mock_project = MagicMock()
+    mock_project.mergerequests.get.return_value = mock_merge_request
+    mock_get_client.return_value.get_user_project.return_value = mock_project
+    mock_get_client.return_value.get_user_id.return_value = 7
+
+    merge_requests.register_tools(mcp, mock_client, GITLAB_URL)
+
+    tool = next(t for t in mcp._tool_manager._tools.values() if t.name == 'update_merge_request')
+    result = tool.fn(
+        project_id='1',
+        mr_iid=1,
+        title='New title',
+        description='New description',
+        labels=['bug'],
+        assignees=['testuser'],
+    )
+
+    mock_project.mergerequests.update.assert_called_once_with(
+        1,
+        {
+            'title': 'New title',
+            'description': 'New description',
+            'labels': ['bug'],
+            'assignee_ids': [7],
+        },
+    )
+    mock_get_client.return_value.get_user_id.assert_called_once_with('testuser')
+    assert result.iid == 1
+
+
+@patch('gitlab_mcp.tools.merge_requests.get_client')
+def test_update_merge_request_sends_only_supplied_fields(mock_get_client, mock_client, mock_merge_request):
+    mcp = FastMCP('test')
+    mock_project = MagicMock()
+    mock_project.mergerequests.get.return_value = mock_merge_request
+    mock_get_client.return_value.get_user_project.return_value = mock_project
+
+    merge_requests.register_tools(mcp, mock_client, GITLAB_URL)
+
+    tool = next(t for t in mcp._tool_manager._tools.values() if t.name == 'update_merge_request')
+    tool.fn(project_id='1', mr_iid=1, description='')
+
+    mock_project.mergerequests.update.assert_called_once_with(1, {'description': ''})
+
+
+@patch('gitlab_mcp.tools.merge_requests.get_client')
+def test_update_merge_request_without_fields_does_not_touch_gitlab(mock_get_client, mock_client):
+    mcp = FastMCP('test')
+    mock_project = MagicMock()
+    mock_get_client.return_value.get_user_project.return_value = mock_project
+
+    merge_requests.register_tools(mcp, mock_client, GITLAB_URL)
+
+    tool = next(t for t in mcp._tool_manager._tools.values() if t.name == 'update_merge_request')
+    with pytest.raises(ValueError):
+        tool.fn(project_id='1', mr_iid=1)
+
+    mock_get_client.return_value.get_user_project.assert_not_called()
+    mock_project.mergerequests.update.assert_not_called()
+
+
+@patch('gitlab_mcp.tools.merge_requests.get_client')
+def test_set_merge_request_draft_adds_prefix(mock_get_client, mock_client, mock_merge_request):
+    mcp = FastMCP('test')
+    mock_project = MagicMock()
+    mock_merge_request.title = 'Test MR'
+    mock_project.mergerequests.get.return_value = mock_merge_request
+    mock_get_client.return_value.get_user_project.return_value = mock_project
+
+    merge_requests.register_tools(mcp, mock_client, GITLAB_URL)
+
+    tool = next(t for t in mcp._tool_manager._tools.values() if t.name == 'set_merge_request_draft')
+    result = tool.fn(project_id='1', mr_iid=1, draft=True)
+
+    mock_project.mergerequests.update.assert_called_once_with(1, {'title': 'Draft: Test MR'})
+    assert result.status == 'draft'
+    assert result.mr_iid == 1
+
+
+@patch('gitlab_mcp.tools.merge_requests.get_client')
+def test_set_merge_request_draft_is_idempotent(mock_get_client, mock_client, mock_merge_request):
+    mcp = FastMCP('test')
+    mock_project = MagicMock()
+    mock_merge_request.title = 'Draft: Test MR'
+    mock_project.mergerequests.get.return_value = mock_merge_request
+    mock_get_client.return_value.get_user_project.return_value = mock_project
+
+    merge_requests.register_tools(mcp, mock_client, GITLAB_URL)
+
+    tool = next(t for t in mcp._tool_manager._tools.values() if t.name == 'set_merge_request_draft')
+    result = tool.fn(project_id='1', mr_iid=1, draft=True)
+
+    mock_project.mergerequests.update.assert_not_called()
+    assert result.status == 'draft'
+
+
+@patch('gitlab_mcp.tools.merge_requests.get_client')
+def test_set_merge_request_draft_strips_prefix(mock_get_client, mock_client, mock_merge_request):
+    mcp = FastMCP('test')
+    mock_project = MagicMock()
+    mock_merge_request.title = 'Draft: Test MR'
+    mock_project.mergerequests.get.return_value = mock_merge_request
+    mock_get_client.return_value.get_user_project.return_value = mock_project
+
+    merge_requests.register_tools(mcp, mock_client, GITLAB_URL)
+
+    tool = next(t for t in mcp._tool_manager._tools.values() if t.name == 'set_merge_request_draft')
+    result = tool.fn(project_id='1', mr_iid=1, draft=False)
+
+    mock_project.mergerequests.update.assert_called_once_with(1, {'title': 'Test MR'})
+    assert result.status == 'ready'
+
+
+@patch('gitlab_mcp.tools.merge_requests.get_client')
+def test_set_merge_request_draft_strips_legacy_wip_prefix(mock_get_client, mock_client, mock_merge_request):
+    mcp = FastMCP('test')
+    mock_project = MagicMock()
+    mock_merge_request.title = 'WIP: Test MR'
+    mock_project.mergerequests.get.return_value = mock_merge_request
+    mock_get_client.return_value.get_user_project.return_value = mock_project
+
+    merge_requests.register_tools(mcp, mock_client, GITLAB_URL)
+
+    tool = next(t for t in mcp._tool_manager._tools.values() if t.name == 'set_merge_request_draft')
+    tool.fn(project_id='1', mr_iid=1, draft=False)
+
+    mock_project.mergerequests.update.assert_called_once_with(1, {'title': 'Test MR'})
+
+
+@patch('gitlab_mcp.tools.merge_requests.get_client')
+def test_set_merge_request_draft_ready_is_idempotent(mock_get_client, mock_client, mock_merge_request):
+    mcp = FastMCP('test')
+    mock_project = MagicMock()
+    mock_merge_request.title = 'Test MR'
+    mock_project.mergerequests.get.return_value = mock_merge_request
+    mock_get_client.return_value.get_user_project.return_value = mock_project
+
+    merge_requests.register_tools(mcp, mock_client, GITLAB_URL)
+
+    tool = next(t for t in mcp._tool_manager._tools.values() if t.name == 'set_merge_request_draft')
+    result = tool.fn(project_id='1', mr_iid=1, draft=False)
+
+    mock_project.mergerequests.update.assert_not_called()
+    assert result.status == 'ready'
+
+
+@patch('gitlab_mcp.tools.merge_requests.get_client')
+def test_update_merge_request_clears_assignees(mock_get_client, mock_client, mock_merge_request):
+    mcp = FastMCP('test')
+    mock_project = MagicMock()
+    mock_project.mergerequests.get.return_value = mock_merge_request
+    mock_get_client.return_value.get_user_project.return_value = mock_project
+
+    merge_requests.register_tools(mcp, mock_client, GITLAB_URL)
+
+    tool = next(t for t in mcp._tool_manager._tools.values() if t.name == 'update_merge_request')
+    tool.fn(project_id='1', mr_iid=1, assignees=[])
+
+    mock_project.mergerequests.update.assert_called_once_with(1, {'assignee_ids': []})
+    mock_get_client.return_value.get_user_id.assert_not_called()
+
+
+@patch('gitlab_mcp.tools.merge_requests.get_client')
+def test_update_merge_request_unknown_assignee_is_not_sent(mock_get_client, mock_client):
+    mcp = FastMCP('test')
+    mock_project = MagicMock()
+    mock_get_client.return_value.get_user_project.return_value = mock_project
+    mock_get_client.return_value.get_user_id.side_effect = UserNotFound('User ghost not found')
+
+    merge_requests.register_tools(mcp, mock_client, GITLAB_URL)
+
+    tool = next(t for t in mcp._tool_manager._tools.values() if t.name == 'update_merge_request')
+    with pytest.raises(UserNotFound):
+        tool.fn(project_id='1', mr_iid=1, assignees=['ghost'])
+
+    mock_project.mergerequests.update.assert_not_called()
