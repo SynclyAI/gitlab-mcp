@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import re
-from dataclasses import asdict, dataclass
+from dataclasses import dataclass
 
 from fastmcp import FastMCP
 from gitlab.v4.objects import ProjectMergeRequest
@@ -10,6 +10,7 @@ from gitlab_mcp.client import TokenGitLabClient
 from gitlab_mcp.tools.common import get_client
 
 DRAFT_PREFIX = 'Draft: '
+TEXT_POSITION = 'text'
 DRAFT_PREFIX_PATTERN = re.compile(r'^\s*(\[draft\]|\(draft\)|draft:|\[wip\]|wip:)\s*', re.IGNORECASE)
 
 
@@ -127,8 +128,24 @@ class MergeRequestChange:
 
 
 @dataclass
+class DiffRefs:
+    base_sha: str
+    start_sha: str
+    head_sha: str
+
+    @staticmethod
+    def from_dict(refs: dict) -> DiffRefs:
+        return DiffRefs(
+            base_sha=refs['base_sha'],
+            start_sha=refs['start_sha'],
+            head_sha=refs['head_sha'],
+        )
+
+
+@dataclass
 class MergeRequestChanges:
     changes: list[MergeRequestChange]
+    diff_refs: DiffRefs
 
 
 @dataclass
@@ -219,18 +236,6 @@ class ActionResult:
     mr_iid: int
 
 
-@dataclass
-class Position:
-    base_sha: str
-    start_sha: str
-    head_sha: str
-    position_type: str
-    new_path: str
-    old_path: str
-    new_line: int | None = None
-    old_line: int | None = None
-
-
 def register_tools(
     mcp: FastMCP,
     service_client: TokenGitLabClient,
@@ -318,7 +323,8 @@ def register_tools(
         changes = mr.changes()
 
         return MergeRequestChanges(
-            changes=[MergeRequestChange.from_dict(c) for c in changes['changes']]
+            changes=[MergeRequestChange.from_dict(c) for c in changes['changes']],
+            diff_refs=DiffRefs.from_dict(changes['diff_refs']),
         )
 
     @mcp.tool
@@ -365,27 +371,53 @@ def register_tools(
         ]
 
     @mcp.tool
-    def add_mr_discussion(
+    def add_merge_request_line_comment(
         project_id: str,
         mr_iid: int,
         body: str,
-        position: Position | None = None,
+        file: str,
+        line: int,
     ) -> Discussion:
         client = get_client(service_client, url)
         project = client.get_user_project(project_id)
         mr = project.mergerequests.get(mr_iid)
-        params = {'body': body}
-        if position:
-            pos_dict = asdict(position)
-            params['position'] = {k: v for k, v in pos_dict.items() if v is not None}
+        changes = mr.changes()
+        change = next((c for c in changes['changes'] if c['new_path'] == file), None)
+        if change is None:
+            raise ValueError(f'File {file} is not changed in merge request {mr_iid}')
 
-        discussion = mr.discussions.create(params)
+        refs = changes['diff_refs']
+        discussion = mr.discussions.create({
+            'body': body,
+            'position': {
+                'base_sha': refs['base_sha'],
+                'start_sha': refs['start_sha'],
+                'head_sha': refs['head_sha'],
+                'position_type': TEXT_POSITION,
+                'new_path': file,
+                'old_path': change['old_path'],
+                'new_line': line,
+            },
+        })
 
         return Discussion(
             id=discussion.id,
             individual_note=False,
             notes=[Note.from_dict(n) for n in discussion.attributes['notes']],
         )
+
+    @mcp.tool
+    def delete_merge_request_comment(
+        project_id: str,
+        mr_iid: int,
+        note_id: int,
+    ) -> ActionResult:
+        client = get_client(service_client, url)
+        project = client.get_user_project(project_id)
+        mr = project.mergerequests.get(mr_iid)
+        mr.notes.delete(note_id)
+
+        return ActionResult(status='deleted', mr_iid=mr_iid)
 
     @mcp.tool
     def add_merge_request_comment(
