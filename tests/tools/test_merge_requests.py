@@ -97,7 +97,7 @@ def test_get_merge_request_changes(mock_get_client, mock_client, mock_merge_requ
 
 
 @patch('gitlab_mcp.tools.merge_requests.get_client')
-def test_get_mr_commits(mock_get_client, mock_client, mock_merge_request):
+def test_get_merge_request_commits(mock_get_client, mock_client, mock_merge_request):
     mcp = FastMCP('test')
     mock_project = MagicMock()
     mock_commit = MagicMock()
@@ -115,7 +115,7 @@ def test_get_mr_commits(mock_get_client, mock_client, mock_merge_request):
 
     merge_requests.register_tools(mcp, mock_client, GITLAB_URL)
 
-    tool = next(t for t in mcp._tool_manager._tools.values() if t.name == 'get_mr_commits')
+    tool = next(t for t in mcp._tool_manager._tools.values() if t.name == 'get_merge_request_commits')
     result = tool.fn(project_id='1', mr_iid=1)
 
     assert len(result) == 1
@@ -124,7 +124,7 @@ def test_get_mr_commits(mock_get_client, mock_client, mock_merge_request):
 
 
 @patch('gitlab_mcp.tools.merge_requests.get_client')
-def test_get_mr_pipelines(mock_get_client, mock_client, mock_merge_request):
+def test_get_merge_request_pipelines(mock_get_client, mock_client, mock_merge_request):
     mcp = FastMCP('test')
     mock_project = MagicMock()
     mock_merge_request.pipelines.list.return_value = [
@@ -143,7 +143,7 @@ def test_get_mr_pipelines(mock_get_client, mock_client, mock_merge_request):
 
     merge_requests.register_tools(mcp, mock_client, GITLAB_URL)
 
-    tool = next(t for t in mcp._tool_manager._tools.values() if t.name == 'get_mr_pipelines')
+    tool = next(t for t in mcp._tool_manager._tools.values() if t.name == 'get_merge_request_pipelines')
     result = tool.fn(project_id='1', mr_iid=1)
 
     assert len(result) == 1
@@ -152,7 +152,7 @@ def test_get_mr_pipelines(mock_get_client, mock_client, mock_merge_request):
 
 
 @patch('gitlab_mcp.tools.merge_requests.get_client')
-def test_get_mr_discussions(mock_get_client, mock_client, mock_merge_request):
+def test_get_merge_request_discussions(mock_get_client, mock_client, mock_merge_request):
     mcp = FastMCP('test')
     mock_project = MagicMock()
     mock_discussion = MagicMock()
@@ -179,7 +179,7 @@ def test_get_mr_discussions(mock_get_client, mock_client, mock_merge_request):
 
     merge_requests.register_tools(mcp, mock_client, GITLAB_URL)
 
-    tool = next(t for t in mcp._tool_manager._tools.values() if t.name == 'get_mr_discussions')
+    tool = next(t for t in mcp._tool_manager._tools.values() if t.name == 'get_merge_request_discussions')
     result = tool.fn(project_id='1', mr_iid=1)
 
     assert len(result) == 1

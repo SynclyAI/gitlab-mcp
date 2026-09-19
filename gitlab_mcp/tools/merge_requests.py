@@ -328,7 +328,7 @@ def register_tools(
         )
 
     @mcp.tool
-    def get_mr_commits(
+    def get_merge_request_commits(
         project_id: str,
         mr_iid: int,
     ) -> list[Commit]:
@@ -340,7 +340,7 @@ def register_tools(
         return [Commit.from_gitlab(c) for c in commits]
 
     @mcp.tool
-    def get_mr_pipelines(
+    def get_merge_request_pipelines(
         project_id: str,
         mr_iid: int,
     ) -> list[Pipeline]:
@@ -352,7 +352,7 @@ def register_tools(
         return [Pipeline.from_dict(p) for p in pipelines]
 
     @mcp.tool
-    def get_mr_discussions(
+    def get_merge_request_discussions(
         project_id: str,
         mr_iid: int,
     ) -> list[Discussion]:
