@@ -1,11 +1,12 @@
 import asyncio
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 
 import gitlab.exceptions
 from fastmcp import Client, FastMCP
 
 from gitlab_mcp.client import PermissionDenied, ProjectNotFound
 from gitlab_mcp.tools import repository
+from gitlab_mcp.tools.common import get_client
 
 GITLAB_URL = 'https://gitlab.example.com'
 
@@ -45,3 +46,15 @@ def test_gitlab_error_reported_to_client():
     result = call_get_repository_tree(gitlab.exceptions.GitlabGetError('500: Internal Server Error'))
 
     assert_reported(result, '500: Internal Server Error')
+
+
+@patch('gitlab_mcp.tools.common.CompositeGitLabClient')
+@patch('gitlab_mcp.tools.common.get_access_token')
+def test_get_client_passes_caller_token(mock_access_token, mock_composite):
+    mock_access_token.return_value = MagicMock(token='caller-token')
+    service_client = MagicMock()
+
+    client = get_client(service_client, GITLAB_URL)
+
+    mock_composite.assert_called_once_with('caller-token', service_client, GITLAB_URL)
+    assert client is mock_composite.return_value

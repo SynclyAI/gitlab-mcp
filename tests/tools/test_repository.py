@@ -1,5 +1,6 @@
 from unittest.mock import MagicMock, patch
 
+import pytest
 from fastmcp import FastMCP
 
 from gitlab_mcp.tools import repository
@@ -207,3 +208,93 @@ def test_get_commit(mock_get_client, mock_client):
     assert result.id == 'abc123'
     assert result.stats['additions'] == 10
     assert result.parent_ids == ['parent123']
+
+
+PROJECT_FILTERS = [
+    ('search', 'needle'),
+    ('owned', True),
+    ('membership', True),
+]
+
+COMMIT_FILTERS = [
+    ('ref_name', 'main'),
+    ('since', '2024-01-01T00:00:00Z'),
+    ('until', '2024-02-01T00:00:00Z'),
+]
+
+
+@pytest.mark.parametrize('name,value', PROJECT_FILTERS)
+@patch('gitlab_mcp.tools.repository.get_client')
+def test_list_projects_forwards_filter(mock_get_client, mock_client, name, value):
+    mcp = FastMCP('test')
+    mock_get_client.return_value.list_projects.return_value = []
+
+    repository.register_tools(mcp, mock_client, GITLAB_URL)
+
+    tool = next(t for t in mcp._tool_manager._tools.values() if t.name == 'list_projects')
+    tool.fn(**{name: value})
+
+    assert mock_get_client.return_value.list_projects.call_args.kwargs[name] == value
+
+
+@pytest.mark.parametrize('name,value', COMMIT_FILTERS)
+@patch('gitlab_mcp.tools.repository.get_client')
+def test_list_commits_forwards_filter(mock_get_client, mock_client, name, value):
+    mcp = FastMCP('test')
+    mock_project = MagicMock()
+    mock_project.commits.list.return_value = []
+    mock_get_client.return_value.get_project.return_value = mock_project
+
+    repository.register_tools(mcp, mock_client, GITLAB_URL)
+
+    tool = next(t for t in mcp._tool_manager._tools.values() if t.name == 'list_commits')
+    tool.fn(project_id='1', **{name: value})
+
+    assert mock_project.commits.list.call_args.kwargs[name] == value
+
+
+@patch('gitlab_mcp.tools.repository.get_client')
+def test_get_repository_tree_forwards_path_and_ref(mock_get_client, mock_client):
+    mcp = FastMCP('test')
+    mock_project = MagicMock()
+    mock_project.repository_tree.return_value = []
+    mock_get_client.return_value.get_project.return_value = mock_project
+
+    repository.register_tools(mcp, mock_client, GITLAB_URL)
+
+    tool = next(t for t in mcp._tool_manager._tools.values() if t.name == 'get_repository_tree')
+    tool.fn(project_id='1', path='src', ref='main')
+
+    params = mock_project.repository_tree.call_args.kwargs
+    assert params['path'] == 'src'
+    assert params['ref'] == 'main'
+
+
+@patch('gitlab_mcp.tools.repository.get_client')
+def test_search_code_forwards_ref(mock_get_client, mock_client):
+    mcp = FastMCP('test')
+    mock_project = MagicMock()
+    mock_project.search.return_value = []
+    mock_get_client.return_value.get_project.return_value = mock_project
+
+    repository.register_tools(mcp, mock_client, GITLAB_URL)
+
+    tool = next(t for t in mcp._tool_manager._tools.values() if t.name == 'search_code')
+    tool.fn(project_id='1', query='needle', ref='main')
+
+    assert mock_project.search.call_args.kwargs['ref'] == 'main'
+
+
+@patch('gitlab_mcp.tools.repository.get_client')
+def test_list_branches_forwards_search(mock_get_client, mock_client):
+    mcp = FastMCP('test')
+    mock_project = MagicMock()
+    mock_project.branches.list.return_value = []
+    mock_get_client.return_value.get_project.return_value = mock_project
+
+    repository.register_tools(mcp, mock_client, GITLAB_URL)
+
+    tool = next(t for t in mcp._tool_manager._tools.values() if t.name == 'list_branches')
+    tool.fn(project_id='1', search='feature')
+
+    assert mock_project.branches.list.call_args.kwargs['search'] == 'feature'

@@ -277,3 +277,57 @@ def test_config_from_env_http_advertised_url_logs_warning(tmp_path, caplog):
             Config.from_env()
 
         assert 'MCP_SERVER_ADVERTISED_URL uses http' in caplog.text
+
+
+def write_secrets(tmp_path):
+    secrets_file = tmp_path / 'secrets.json'
+    secrets_file.write_text(json.dumps({
+        'oauth_client_id': 'test-client-id',
+        'oauth_client_secret': 'test-client-secret',
+        'service_token': 'test-service-token',
+    }))
+
+    return secrets_file
+
+
+def tls_env(tmp_path, **overrides):
+    env = {
+        'GITLAB_URL': 'https://gitlab.example.com',
+        'GITLAB_SECRETS_PATH': str(write_secrets(tmp_path)),
+        'MCP_SERVER_BIND_URL': 'https://0.0.0.0:8445',
+        'MCP_SERVER_ADVERTISED_URL': 'https://mcp.example.com:8445',
+    }
+    env.update(overrides)
+
+    return env
+
+
+def test_config_from_env_missing_secrets_file(tmp_path):
+    missing = tmp_path / 'absent.json'
+
+    with patch.dict('os.environ', {
+        'GITLAB_URL': 'https://gitlab.example.com',
+        'GITLAB_SECRETS_PATH': str(missing),
+    }, clear=True):
+        with pytest.raises(ValueError, match=f'Secrets file not found: {missing}'):
+            Config.from_env()
+
+
+def test_config_from_env_missing_ssl_cert_file(tmp_path):
+    missing = tmp_path / 'absent.crt'
+    env = tls_env(tmp_path, MCP_SSL_CERT_PATH=str(missing))
+
+    with patch.dict('os.environ', env, clear=True):
+        with pytest.raises(ValueError, match=f'SSL certificate file not found: {missing}'):
+            Config.from_env()
+
+
+def test_config_from_env_missing_ssl_key_file(tmp_path):
+    cert_file = tmp_path / 'server.crt'
+    cert_file.write_text('cert')
+    missing = tmp_path / 'absent.pem'
+    env = tls_env(tmp_path, MCP_SSL_CERT_PATH=str(cert_file), MCP_SSL_KEY_PATH=str(missing))
+
+    with patch.dict('os.environ', env, clear=True):
+        with pytest.raises(ValueError, match=f'SSL key file not found: {missing}'):
+            Config.from_env()

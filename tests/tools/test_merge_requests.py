@@ -785,3 +785,91 @@ def test_delete_merge_request_discussion_note(mock_get_client, mock_client, mock
     discussion.notes.delete.assert_called_once_with(254230)
     mock_merge_request.notes.delete.assert_not_called()
     assert result.status == 'deleted'
+
+
+SEARCH_FILTERS = [
+    ('state', 'opened'),
+    ('wip', 'no'),
+    ('author_username', 'someone'),
+    ('assignee_username', 'reviewer'),
+    ('search', 'needle'),
+    ('created_after', '2024-01-01T00:00:00Z'),
+    ('created_before', '2024-02-01T00:00:00Z'),
+    ('updated_after', '2024-03-01T00:00:00Z'),
+    ('updated_before', '2024-04-01T00:00:00Z'),
+]
+
+LIST_FILTERS = [
+    ('state', 'merged'),
+    ('author_username', 'someone'),
+    ('assignee_username', 'reviewer'),
+]
+
+
+@pytest.mark.parametrize('name,value', SEARCH_FILTERS)
+@patch('gitlab_mcp.tools.merge_requests.get_client')
+def test_search_merge_requests_forwards_filter(mock_get_client, mock_client, name, value):
+    mcp = FastMCP('test')
+    mock_get_client.return_value.list_merge_requests.return_value = []
+
+    merge_requests.register_tools(mcp, mock_client, GITLAB_URL)
+
+    tool = next(t for t in mcp._tool_manager._tools.values() if t.name == 'search_merge_requests')
+    tool.fn(**{name: value})
+
+    params = mock_get_client.return_value.list_merge_requests.call_args.kwargs
+    assert params[name] == value
+
+
+@pytest.mark.parametrize('name,value', LIST_FILTERS)
+@patch('gitlab_mcp.tools.merge_requests.get_client')
+def test_list_merge_requests_forwards_filter(mock_get_client, mock_client, name, value):
+    mcp = FastMCP('test')
+    mock_project = MagicMock()
+    mock_project.mergerequests.list.return_value = []
+    mock_get_client.return_value.get_project.return_value = mock_project
+
+    merge_requests.register_tools(mcp, mock_client, GITLAB_URL)
+
+    tool = next(t for t in mcp._tool_manager._tools.values() if t.name == 'list_merge_requests')
+    tool.fn(project_id='1', **{name: value})
+
+    params = mock_project.mergerequests.list.call_args.kwargs
+    assert params[name] == value
+
+
+@patch('gitlab_mcp.tools.merge_requests.get_client')
+def test_create_merge_request_forwards_description(mock_get_client, mock_client, mock_merge_request):
+    mcp = FastMCP('test')
+    mock_project = MagicMock()
+    mock_project.remove_source_branch_after_merge = False
+    mock_project.mergerequests.create.return_value = mock_merge_request
+    mock_get_client.return_value.get_user_project.return_value = mock_project
+
+    merge_requests.register_tools(mcp, mock_client, GITLAB_URL)
+
+    tool = next(t for t in mcp._tool_manager._tools.values() if t.name == 'create_merge_request')
+    tool.fn(
+        project_id='1',
+        source_branch='feature',
+        target_branch='main',
+        title='Test MR',
+        description='Why this change',
+    )
+
+    assert mock_project.mergerequests.create.call_args.args[0]['description'] == 'Why this change'
+
+
+@patch('gitlab_mcp.tools.merge_requests.get_client')
+def test_merge_merge_request_removes_source_branch(mock_get_client, mock_client, mock_merge_request):
+    mcp = FastMCP('test')
+    mock_project = MagicMock()
+    mock_project.mergerequests.get.return_value = mock_merge_request
+    mock_get_client.return_value.get_user_project.return_value = mock_project
+
+    merge_requests.register_tools(mcp, mock_client, GITLAB_URL)
+
+    tool = next(t for t in mcp._tool_manager._tools.values() if t.name == 'merge_merge_request')
+    tool.fn(project_id='1', mr_iid=1, should_remove_source_branch=True)
+
+    mock_merge_request.merge.assert_called_once_with(should_remove_source_branch=True)
