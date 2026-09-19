@@ -80,15 +80,15 @@ gitlab-mcp
 
 ## Docker
 
-The image installs a pre-built wheel, so build it first:
+The image installs a pre-built wheel and `dist/` is the build context:
 
 ```bash
-rm -rf dist
-python -m build --wheel
-docker build -t gitlab-mcp:$(grep -Po '(?<=^version = ")[^"]*' pyproject.toml) .
+make image
 ```
 
-`rm -rf dist` is required - every wheel left in `dist/` is copied into the image.
+Equivalent to building the wheel into an emptied `dist/` and running
+`docker build -f Dockerfile -t gitlab-mcp:<version> dist/`. Needs the `dev`
+extra for `build`, or `make image PYTHON=venv/bin/python` to use the venv.
 
 ## Development
 

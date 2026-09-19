@@ -2,7 +2,7 @@ FROM python:3.11-slim
 
 WORKDIR /app
 
-COPY dist/gitlab_mcp-*.whl /tmp/
+COPY gitlab_mcp-*.whl /tmp/
 
 RUN pip install --no-cache-dir /tmp/gitlab_mcp-*.whl && rm /tmp/*.whl
 
