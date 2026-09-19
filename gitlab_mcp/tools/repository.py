@@ -6,7 +6,7 @@ from fastmcp import FastMCP
 from gitlab.v4.objects import Project as GitLabProject, ProjectBranch, ProjectCommit
 
 from gitlab_mcp.client import TokenGitLabClient
-from gitlab_mcp.tools.common import get_client, handle_gitlab_errors
+from gitlab_mcp.tools.common import get_client
 
 
 @dataclass
@@ -195,7 +195,6 @@ def register_tools(
 ):
 
     @mcp.tool
-    @handle_gitlab_errors
     def list_projects(
         search: str | None = None,
         owned: bool | None = None,
@@ -215,7 +214,6 @@ def register_tools(
         return [Project.from_gitlab(p) for p in projects]
 
     @mcp.tool
-    @handle_gitlab_errors
     def get_repository_tree(
         project_id: str,
         path: str | None = None,
@@ -235,7 +233,6 @@ def register_tools(
         return [TreeItem.from_dict(item) for item in items]
 
     @mcp.tool
-    @handle_gitlab_errors
     def get_file_content(
         project_id: str,
         file_path: str,
@@ -256,7 +253,6 @@ def register_tools(
         )
 
     @mcp.tool
-    @handle_gitlab_errors
     def get_file_blame(
         project_id: str,
         file_path: str,
@@ -275,7 +271,6 @@ def register_tools(
         ]
 
     @mcp.tool
-    @handle_gitlab_errors
     def search_code(
         project_id: str,
         query: str,
@@ -292,7 +287,6 @@ def register_tools(
         return [CodeSearchResult.from_dict(r) for r in results]
 
     @mcp.tool
-    @handle_gitlab_errors
     def list_branches(
         project_id: str,
         search: str | None = None,
@@ -308,7 +302,6 @@ def register_tools(
         return [Branch.from_gitlab(b) for b in branches]
 
     @mcp.tool
-    @handle_gitlab_errors
     def list_commits(
         project_id: str,
         ref_name: str | None = None,
@@ -330,7 +323,6 @@ def register_tools(
         return [CommitListItem.from_gitlab(c) for c in commits]
 
     @mcp.tool
-    @handle_gitlab_errors
     def get_commit(
         project_id: str,
         sha: str,

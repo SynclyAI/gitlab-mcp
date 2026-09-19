@@ -6,7 +6,7 @@ from fastmcp import FastMCP
 from gitlab.v4.objects import ProjectMergeRequest
 
 from gitlab_mcp.client import TokenGitLabClient
-from gitlab_mcp.tools.common import get_client, handle_gitlab_errors
+from gitlab_mcp.tools.common import get_client
 
 
 @dataclass
@@ -234,7 +234,6 @@ def register_tools(
 ):
 
     @mcp.tool
-    @handle_gitlab_errors
     def search_merge_requests(
         state: str | None = None,
         scope: str = 'all',
@@ -273,7 +272,6 @@ def register_tools(
         return [MergeRequest.from_gitlab(mr) for mr in mrs]
 
     @mcp.tool
-    @handle_gitlab_errors
     def list_merge_requests(
         project_id: str,
         state: str | None = None,
@@ -295,7 +293,6 @@ def register_tools(
         return [MergeRequest.from_gitlab(mr) for mr in mrs]
 
     @mcp.tool
-    @handle_gitlab_errors
     def get_merge_request(
         project_id: str,
         mr_iid: int,
@@ -307,7 +304,6 @@ def register_tools(
         return MergeRequestDetails.from_gitlab(mr)
 
     @mcp.tool
-    @handle_gitlab_errors
     def get_merge_request_changes(
         project_id: str,
         mr_iid: int,
@@ -322,7 +318,6 @@ def register_tools(
         )
 
     @mcp.tool
-    @handle_gitlab_errors
     def get_mr_commits(
         project_id: str,
         mr_iid: int,
@@ -335,7 +330,6 @@ def register_tools(
         return [Commit.from_gitlab(c) for c in commits]
 
     @mcp.tool
-    @handle_gitlab_errors
     def get_mr_pipelines(
         project_id: str,
         mr_iid: int,
@@ -348,7 +342,6 @@ def register_tools(
         return [Pipeline.from_dict(p) for p in pipelines]
 
     @mcp.tool
-    @handle_gitlab_errors
     def get_mr_discussions(
         project_id: str,
         mr_iid: int,
@@ -368,7 +361,6 @@ def register_tools(
         ]
 
     @mcp.tool
-    @handle_gitlab_errors
     def add_mr_discussion(
         project_id: str,
         mr_iid: int,
@@ -392,7 +384,6 @@ def register_tools(
         )
 
     @mcp.tool
-    @handle_gitlab_errors
     def add_merge_request_comment(
         project_id: str,
         mr_iid: int,
@@ -411,7 +402,6 @@ def register_tools(
         )
 
     @mcp.tool
-    @handle_gitlab_errors
     def create_merge_request(
         project_id: str,
         source_branch: str,
@@ -436,7 +426,6 @@ def register_tools(
         return MergeRequestDetails.from_gitlab(mr)
 
     @mcp.tool
-    @handle_gitlab_errors
     def approve_merge_request(
         project_id: str,
         mr_iid: int,
@@ -449,7 +438,6 @@ def register_tools(
         return ActionResult(status='approved', mr_iid=mr_iid)
 
     @mcp.tool
-    @handle_gitlab_errors
     def unapprove_merge_request(
         project_id: str,
         mr_iid: int,
@@ -462,7 +450,6 @@ def register_tools(
         return ActionResult(status='unapproved', mr_iid=mr_iid)
 
     @mcp.tool
-    @handle_gitlab_errors
     def merge_merge_request(
         project_id: str,
         mr_iid: int,
