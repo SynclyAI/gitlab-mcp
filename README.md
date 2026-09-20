@@ -18,7 +18,7 @@ MCP (Model Context Protocol) server for AI-assisted code review with GitLab on-p
 ### Repository Tools
 - List projects
 - Browse repository tree
-- Get file content and blame
+- Get file content, whole or by line range, and blame
 - Search code
 - List branches and commits
 

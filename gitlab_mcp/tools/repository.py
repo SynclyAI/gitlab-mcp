@@ -9,6 +9,32 @@ from gitlab_mcp.client import TokenGitLabClient
 from gitlab_mcp.tools.common import get_client
 
 
+def decode_text(file) -> str:
+    try:
+        return file.decode().decode('utf-8')
+    except UnicodeDecodeError:
+        raise ValueError(f'File {file.file_path} is not UTF-8 text ({file.size} bytes)')
+
+
+def read_lines(text: str, start_line: int | None, line_count: int | None) -> tuple[str, int, int]:
+    lines = text.splitlines()
+    total_lines = len(lines)
+    if start_line is None and line_count is None:
+        return text, total_lines, 1
+
+    start = start_line if start_line is not None else 1
+    if start < 1:
+        raise ValueError(f'start_line must be 1 or greater, got {start}')
+    if line_count is not None and line_count < 1:
+        raise ValueError(f'line_count must be 1 or greater, got {line_count}')
+    if start_line is not None and start > total_lines:
+        raise ValueError(f'File has {total_lines} lines, start_line {start} is past the end')
+
+    end = start - 1 + line_count if line_count is not None else total_lines
+
+    return '\n'.join(lines[start - 1:end]), total_lines, start
+
+
 @dataclass
 class Project:
     id: int
@@ -56,6 +82,8 @@ class FileContent:
     content: str
     ref: str
     last_commit_id: str
+    total_lines: int
+    start_line: int
 
 
 @dataclass
@@ -237,19 +265,24 @@ def register_tools(
         project_id: str,
         file_path: str,
         ref: str | None = None,
+        start_line: int | None = None,
+        line_count: int | None = None,
     ) -> FileContent:
         client = get_client(service_client, url)
         project = client.get_project(project_id)
         file = project.files.get(file_path, ref or project.default_branch)
+        content, total_lines, start = read_lines(decode_text(file), start_line, line_count)
 
         return FileContent(
             file_path=file.file_path,
             file_name=file.file_name,
             size=file.size,
             encoding=file.encoding,
-            content=file.decode().decode('utf-8'),
+            content=content,
             ref=file.ref,
             last_commit_id=file.last_commit_id,
+            total_lines=total_lines,
+            start_line=start,
         )
 
     @mcp.tool
