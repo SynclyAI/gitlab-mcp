@@ -82,7 +82,14 @@ gitlab-mcp
 
 ## Docker
 
-The image installs a pre-built wheel and `dist/` is the build context:
+Each release is published to the GitHub Container Registry:
+
+```bash
+docker pull ghcr.io/synclyai/gitlab-mcp:1.1.1
+docker pull ghcr.io/synclyai/gitlab-mcp:latest
+```
+
+To build locally instead, the image installs a pre-built wheel and `dist/` is the build context:
 
 ```bash
 make image
