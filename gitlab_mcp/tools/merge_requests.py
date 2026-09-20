@@ -130,6 +130,25 @@ class MergeRequestChange:
 
 
 @dataclass
+class ChangedFile:
+    old_path: str
+    new_path: str
+    new_file: bool
+    renamed_file: bool
+    deleted_file: bool
+
+    @staticmethod
+    def from_dict(c: dict) -> ChangedFile:
+        return ChangedFile(
+            old_path=c['old_path'],
+            new_path=c['new_path'],
+            new_file=c['new_file'],
+            renamed_file=c['renamed_file'],
+            deleted_file=c['deleted_file'],
+        )
+
+
+@dataclass
 class DiffRefs:
     base_sha: str
     start_sha: str
@@ -340,6 +359,32 @@ def register_tools(
             changes=[MergeRequestChange.from_dict(c) for c in changes['changes']],
             diff_refs=DiffRefs.from_dict(changes['diff_refs']),
         )
+
+    @mcp.tool
+    def get_merge_request_files(
+        project_id: str,
+        mr_iid: int,
+    ) -> list[ChangedFile]:
+        client = get_client(service_client, url)
+        project = client.get_project(project_id)
+        mr = project.mergerequests.get(mr_iid)
+
+        return [ChangedFile.from_dict(c) for c in mr.changes()['changes']]
+
+    @mcp.tool
+    def get_merge_request_file_diff(
+        project_id: str,
+        mr_iid: int,
+        file: str,
+    ) -> MergeRequestChange:
+        client = get_client(service_client, url)
+        project = client.get_project(project_id)
+        mr = project.mergerequests.get(mr_iid)
+        change = next((c for c in mr.changes()['changes'] if file in (c['new_path'], c['old_path'])), None)
+        if change is None:
+            raise ValueError(f'File {file} is not changed in merge request {mr_iid}')
+
+        return MergeRequestChange.from_dict(change)
 
     @mcp.tool
     def get_merge_request_commits(
