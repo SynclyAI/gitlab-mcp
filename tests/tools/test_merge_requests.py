@@ -873,3 +873,82 @@ def test_merge_merge_request_removes_source_branch(mock_get_client, mock_client,
     tool.fn(project_id='1', mr_iid=1, should_remove_source_branch=True)
 
     mock_merge_request.merge.assert_called_once_with(should_remove_source_branch=True)
+
+
+CHANGED_FILES = {
+    'changes': [
+        {
+            'old_path': 'src/Main.java',
+            'new_path': 'src/Main.java',
+            'a_mode': '100644',
+            'b_mode': '100644',
+            'new_file': False,
+            'renamed_file': False,
+            'deleted_file': False,
+            'diff': '@@ -1 +1 @@\n-old\n+new',
+        },
+        {
+            'old_path': 'before.py',
+            'new_path': 'after.py',
+            'a_mode': '100644',
+            'b_mode': '100644',
+            'new_file': False,
+            'renamed_file': True,
+            'deleted_file': False,
+            'diff': '',
+        },
+    ],
+    'diff_refs': {'base_sha': 'base1', 'start_sha': 'start1', 'head_sha': 'head1'},
+}
+
+
+def changes_tool(mock_get_client, mock_client, mock_merge_request, name):
+    mcp = FastMCP('test')
+    mock_project = MagicMock()
+    mock_merge_request.changes.return_value = CHANGED_FILES
+    mock_project.mergerequests.get.return_value = mock_merge_request
+    mock_get_client.return_value.get_project.return_value = mock_project
+
+    merge_requests.register_tools(mcp, mock_client, GITLAB_URL)
+
+    return next(t for t in mcp._tool_manager._tools.values() if t.name == name)
+
+
+@patch('gitlab_mcp.tools.merge_requests.get_client')
+def test_get_merge_request_files(mock_get_client, mock_client, mock_merge_request):
+    tool = changes_tool(mock_get_client, mock_client, mock_merge_request, 'get_merge_request_files')
+
+    result = tool.fn(project_id='1', mr_iid=1)
+
+    assert [f.new_path for f in result] == ['src/Main.java', 'after.py']
+    assert result[1].renamed_file is True
+    assert not any(hasattr(f, 'diff') for f in result)
+
+
+@patch('gitlab_mcp.tools.merge_requests.get_client')
+def test_get_merge_request_file_diff(mock_get_client, mock_client, mock_merge_request):
+    tool = changes_tool(mock_get_client, mock_client, mock_merge_request, 'get_merge_request_file_diff')
+
+    result = tool.fn(project_id='1', mr_iid=1, file='src/Main.java')
+
+    assert result.new_path == 'src/Main.java'
+    assert result.diff == '@@ -1 +1 @@\n-old\n+new'
+
+
+@patch('gitlab_mcp.tools.merge_requests.get_client')
+def test_get_merge_request_file_diff_by_old_path(mock_get_client, mock_client, mock_merge_request):
+    tool = changes_tool(mock_get_client, mock_client, mock_merge_request, 'get_merge_request_file_diff')
+
+    result = tool.fn(project_id='1', mr_iid=1, file='before.py')
+
+    assert result.old_path == 'before.py'
+    assert result.new_path == 'after.py'
+    assert result.diff == ''
+
+
+@patch('gitlab_mcp.tools.merge_requests.get_client')
+def test_get_merge_request_file_diff_rejects_unchanged_file(mock_get_client, mock_client, mock_merge_request):
+    tool = changes_tool(mock_get_client, mock_client, mock_merge_request, 'get_merge_request_file_diff')
+
+    with pytest.raises(ValueError, match='File untouched.py is not changed in merge request 1'):
+        tool.fn(project_id='1', mr_iid=1, file='untouched.py')

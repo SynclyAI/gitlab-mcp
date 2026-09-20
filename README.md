@@ -10,7 +10,8 @@ MCP (Model Context Protocol) server for AI-assisted code review with GitLab on-p
 ### Merge Request Tools
 - List, get, create, update merge requests
 - Set MR draft status
-- Get MR changes, commits, pipelines
+- List changed files, get one file's diff or all MR changes
+- Get MR commits and pipelines
 - Get notes and discussions, add notes, start discussions on the MR or on a diff line
 - Reply to, resolve, edit and delete comments
 - Approve, unapprove, merge MRs
