@@ -97,7 +97,8 @@ make image
 ```
 
 Equivalent to building the wheel into an emptied `dist/` and running
-`docker build -f Dockerfile -t gitlab-mcp:<version> dist/`. The wheel is built
+`docker build -f Dockerfile -t ghcr.io/synclyai/gitlab-mcp:<version> dist/`, so a local build
+carries the same name as the published image. The wheel is built
 with `venv/bin/python`, so the `dev` extra must be installed.
 
 ## Development
